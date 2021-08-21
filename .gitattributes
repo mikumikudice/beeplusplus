@@ -1,0 +1,9 @@
+*.md !text -filter -merge -diff
+*.md filter=lfs diff=lfs merge=lfs -text
+/LICENSE filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.h filter=lfs diff=lfs merge=lfs -text
+*.c filter=lfs diff=lfs merge=lfs -text
+*.sh filter=lfs diff=lfs merge=lfs -text
+*.bi filter=lfs diff=lfs merge=lfs -text
+* filter=lfs diff=lfs merge=lfs -text
