@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ef294e8a490d58e540a544547f3df25f5ab5b546a1df1584dcb55f523690df6e
-size 472
+#define bcclib
+
+// Check if string is empty
+#define isblnk(val) (!strcmp(val, ""))
+
+#define arrlen(arr)  sizeof(arr) / sizeof(arr[0])
+
+#define max(n, o) (n > o ? n : o)
+#define min(n, o) (n > o ? o : n)
+
+#ifndef __cplusplus
+
+    #define and && // Better operators
+    #define or  || // Better operators
+
+    // Fortran-like boolean
+    typedef enum boolean {F, T} bool;
+
+    // nil for C
+    #define nil ((void *) 0)
+#else
+    // nil for C++
+    #define nil __null
+#endif

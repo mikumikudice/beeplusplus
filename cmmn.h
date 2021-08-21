@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:869cbe5b9d1f4acbeb7ddee309d592701d296f2d51a3367277fe80173b19ca47
-size 185
+#ifndef   _GNU_SOURCE
+#define   _GNU_SOURCE
+#endif
+#define cmmn
+
+#include  <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "strlib.h"
+
+#include <math.h>
+#include <sys/time.h>
