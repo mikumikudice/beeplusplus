@@ -39,9 +39,9 @@ main(){
 ## Progress in
 ### IMPLEMENTATION
 Status: work in progress (25% completed)
-- [+] Load source
-    - [+] loader
-    - [+] lexer
+- [x] Load source
+    - [x] loader
+    - [x] lexer
 - [ ] Prossessing
     - [ ] syntax analysis
     - [ ] parser
@@ -52,13 +52,13 @@ Status: work in progress (25% completed)
     - [ ] linking
 ### DEVELOPMENT
 Status: work in progress (80% completed)
-- [+] Basic syntax
-    - [+] reserved keywords
-    - [+] default formating
-- [-] Design
-    - [+] philosofy
-    - [-] how to implement
-        - [+] frontend
+- [x] Basic syntax
+    - [x] reserved keywords
+    - [x] default formating
+- [ ] Design
+    - [x] philosofy
+    - [x] how to implement
+        - [x] frontend
         - [ ] backend
 
 ## Principles of Design
