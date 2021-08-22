@@ -1,6 +1,4 @@
-.vscode
-.git
-.lide_*
+.*
 TODO
 bi
 run_valgrind.sh
