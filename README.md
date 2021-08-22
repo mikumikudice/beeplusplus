@@ -24,7 +24,7 @@ printf("%d\n", x); // prints zero
 printf("%d\n", x / y); // prints zero
 printf("%d\n", z[4]); // prints zero
 printf("%d\n", z[4][2]); // prints 2 because 2 is the first item pointed by the first
-                         // item in Z (we looped 4 to 0, or rest-divided it by the legth)
+                         // item in Z (we looped 4 to 0, or rest-divided it by the length)
 ```
 Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to use `x =+ 4` to sum `4` to `x`, thing that C does better, using `x += 4` to say it. But this change only affects arithimetic binary operators, like sum, division, etc. What let us do things like `x =<= 4` (`x = (x <= 4)`). Awesome, right?
 

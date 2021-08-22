@@ -13,6 +13,7 @@ imut char * KWRDIDX = "attempt to use a keyword as namespace";
 
 // array of source code lines
 carr code;
+// header-located string array
 carr sarr;
 imut char * strq[] = {"'", "\""};
 
