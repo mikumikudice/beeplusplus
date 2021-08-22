@@ -1,8 +1,11 @@
-# B++, or incremented B
+# B++, bee or incremented B
 The good and old B, but better, smarter, easier and maybe faster. B++ is a compiled, almost functional, notyped, safe, tiny and lit programming language. _All hail B!_
 
+## B++
+B++ is Influenced by B, C, Fortran, Rust, Pony and Haskell. The syntax from B/C, old school vibe and math philosofy from Fortran, safety from Rust and Pony and implementation of pure fuctional programming (or almost it) from Haskell.
+
 ## What is B?
-[B](https://en.wikipedia.org/wiki/B_(programming_language)) is the father (or mother) of C. Things like treat arrays as pointers and use incrementation or decrementation on pointers came from B. It was a lang written by the good man, legendary, smart, greater, [Ken Thompson](https://pt.wikipedia.org/wiki/Ken_Thompson) for the 36-bit mainframes (aka really lit old school computers).
+[B](https://en.wikipedia.org/wiki/B_(programming_language)) is the father (or mother) of C. Things like treat arrays as pointers and use incrementation or decrementation on pointers came from B. It was a lang written by the good man, legendary, smart, greater, dear [Dennis Ritchie](https://en.wikipedia.org/wiki/Dennis_Ritchie) for the 36-bit mainframes (aka really lit old school computers).
 
 ## What's new?
 Glad you asked. Now we have structures (no more variables named with dots), implemented behind-the-scenes as a array which items have aliases.
@@ -33,7 +36,8 @@ main(){
     printf("%d\n", sum(8, 234)); // prints 242
 }
 ```
-## Progress
+## Progress in
+### IMPLEMENTATION
 Status: work in progress (25% completed)
 [+] Load source
     [+] loader
@@ -46,6 +50,16 @@ Status: work in progress (25% completed)
     [ ] optimizations
     [ ] asm generation
     [ ] linking
+### DEVELOPMENT
+Status: work in progress (80% completed)
+[+] Basic syntax
+    [+] reserved keywords
+    [+] default formating
+[-] Design
+    [+] philosofy
+    [-] how to implement
+        [+] frontend
+        [ ] backend
 
 ## Principles of Design
 The design is simple. We must grant 4 things, the above one is more important than the bellow one and so on.
