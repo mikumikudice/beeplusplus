@@ -1,4 +1,4 @@
-.*
+.[^(gitattributes)]*
 TODO
 bi.bin
 bi.exe
