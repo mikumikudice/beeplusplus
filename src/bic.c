@@ -274,7 +274,6 @@ lexout lexit(){
                             dummy = strgsub(dummy,
                             metachar[mc].key, metachar[mc].val);
                         }
-
                         // it's a doubleword char
                         if(src[c] == strq[0][0]){
                             // slice it
@@ -409,6 +408,7 @@ lexout lexit(){
                     }
                     if(this.type != UNKNOWN) goto finish;
 
+                    u16 len;
                     alen = arrlen(OPERATORS);
                     // compare with the known symbols
                     for(u16 o = 0; o < alen; o++){
@@ -416,7 +416,7 @@ lexout lexit(){
                         // slice size of the sym
                         char t[alen + 1];
                         // avoid multiple calls
-                        u16 len = strlen(OPERATORS[o]);
+                        len = strlen(OPERATORS[o]);
 
                         // append missing chars
                         for(u16 chr = c; chr < c + len; chr++){
@@ -436,9 +436,11 @@ lexout lexit(){
                             strcpy(this.vall, OPERATORS[o]);
 
                             this.type = OPERATOR;
-                            c += len - 1;
                         }
                     }
+                    // move pointer after operator
+                    c += len - 1;
+
                 // just a space out of a string
                 } else continue;
 
