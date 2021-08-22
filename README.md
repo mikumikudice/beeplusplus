@@ -57,7 +57,7 @@ Status: work in progress (80% completed)
     - [x] default formating
 - [ ] Design
     - [x] philosofy
-    - [x] how to implement
+    - [ ] how to implement
         - [x] frontend
         - [ ] backend
 
