@@ -49,18 +49,11 @@ int main(u16 argc, char ** args){
             }
         }
         // check file
-        #ifdef _WIN32
-            if(_access(args[argc - 1], 0) == 0)
-            cmperr("the given file does not exist or cannot be read", nil, nil);
-            else
-            lddf = args[argc - 1];
-        #else
-            if(access(args[argc - 1], F_OK))
-                cmperr("the given file does not"
-                " exist or cannot be read", nil, nil);
-            else
-            lddf = args[argc - 1];
-        #endif
+        if(access(args[argc - 1], F_OK))
+            cmperr("the given file does not"
+            " exist or cannot be read", nil, nil);
+        else
+        lddf = args[argc - 1];
 
         if(outf == nil) outf = "out.o";
         if(mthd == nil) mthd = "-d";
