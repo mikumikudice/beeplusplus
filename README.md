@@ -39,27 +39,27 @@ main(){
 ## Progress in
 ### IMPLEMENTATION
 Status: work in progress (25% completed)
-[+] Load source
-    [+] loader
-    [+] lexer
-[ ] Prossessing
-    [ ] syntax analysis
-    [ ] parser
-    [ ] semantic analysis
-[ ] Codegen
-    [ ] optimizations
-    [ ] asm generation
-    [ ] linking
+- [+] Load source
+    - [+] loader
+    - [+] lexer
+- [ ] Prossessing
+    - [ ] syntax analysis
+    - [ ] parser
+    - [ ] semantic analysis
+- [ ] Codegen
+    - [ ] optimizations
+    - [ ] asm generation
+    - [ ] linking
 ### DEVELOPMENT
 Status: work in progress (80% completed)
-[+] Basic syntax
-    [+] reserved keywords
-    [+] default formating
-[-] Design
-    [+] philosofy
-    [-] how to implement
-        [+] frontend
-        [ ] backend
+- [+] Basic syntax
+    - [+] reserved keywords
+    - [+] default formating
+- [-] Design
+    - [+] philosofy
+    - [-] how to implement
+        - [+] frontend
+        - [ ] backend
 
 ## Principles of Design
 The design is simple. We must grant 4 things, the above one is more important than the bellow one and so on.
