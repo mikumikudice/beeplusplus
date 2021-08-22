@@ -1,2 +1,2 @@
 set -e
-gcc -g bi.c -o bi -fsanitize=leak,address
+gcc -g bi.c -o bi.bin -fsanitize=leak,address

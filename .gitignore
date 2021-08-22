@@ -1,4 +1,5 @@
 .*
 TODO
-bi
+bi.bin
+bi.exe
 run_valgrind.sh

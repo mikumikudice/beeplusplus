@@ -1,1 +1,1 @@
-gcc bi.c -o bi
+gcc bi.c -o bi.bin
