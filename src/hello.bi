@@ -1,4 +1,4 @@
 main(args, argc){
     putc('hell');
-    putc('o!\\n');
+    putc('o!\n');
 }
