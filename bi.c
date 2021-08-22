@@ -23,13 +23,10 @@ int main(u16 argc, char ** args){
         puts("-o: build name; sets the output file name");
         puts("-r: release build; generates optimized artifacts");
         puts("-d: debug build; generates unoptimized artifacts");
-        puts("--_b: use with r or d; generates a asm file not assembled");
+        puts("--_b: use with r or d for release and debug; generates an asm file not assembled");
 
         return 0;
-    // null checker
-    } else if(isblnk(args[1]))
-        cmperr("invalid arguments", nil, nil);
-    else {
+    } else {
         for(u16 a = 1; a < argc; a++){
             // outfile
             if(!strcmp(args[a], "-o"))
