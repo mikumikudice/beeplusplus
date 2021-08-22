@@ -33,6 +33,20 @@ main(){
     printf("%d\n", sum(8, 234)); // prints 242
 }
 ```
+## Progress
+Status: work in progress (25% completed)
+[+] Load source
+    [+] loader
+    [+] lexer
+[ ] Prossessing
+    [ ] syntax analysis
+    [ ] parser
+    [ ] semantic analysis
+[ ] Codegen
+    [ ] optimizations
+    [ ] asm generation
+    [ ] linking
+
 ## Principles of Design
 The design is simple. We must grant 4 things, the above one is more important than the bellow one and so on.
 
@@ -50,4 +64,4 @@ And finally, code must be simple to understand and to read. Clean, short and sim
 
 ## Why B?
 I'm a old soul trapped in a young body. I like floppy disks, the idea of a mainframe and old languages (such as Fortran and B). And I like the idea of the roots of C. From where we came from. Also, it's a cannonic language in one of my favorite cartoons out there.
-<img src="advanced bee++ coding.gif" style="width:680px;height:384px">
+<!-- <img src="advanced bee++ coding.gif" style="width:680px;height:384px"> -->
