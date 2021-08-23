@@ -90,7 +90,8 @@ imut hash metachar[] = {
     (hash){.key = "*n" , .val = "\n"},
     (hash){.key = "*t" , .val = "\t"},
     (hash){.key = "*r" , .val = "\r"},
-    (hash){.key = "**" , .val = "*" },
+    (hash){.key = "*e" , .val = "\0"},
+    (hash){.key = "**" , .val = "\*"}, // escape char here is not needed but it becomes ugly without it
 };
 
 typedef enum token_type {

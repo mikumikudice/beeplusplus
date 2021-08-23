@@ -13,7 +13,7 @@
 int main(u16 argc, char ** args){
     FILE * fptr;
     bool run = F, bld = F;
-    char * lddf, * outf = nil, * mthd = nil;
+    char * lddf, * outf = nil, * mthd = nil, * rcpt = F;
 
     if(argc == 1){
         printf("B (incremented) Compiler %s - %s copyright(c) Mateus M. D. Souza\n", CVER, DATE);
@@ -42,8 +42,14 @@ int main(u16 argc, char ** args){
             or !strcmp(args[a], "--ra") // release asm
             or !strcmp(args[a], "--da") // debug asm
             ){
-                if(mthd == nil)
-                mthd = args[a];
+                if(mthd == nil){
+                    if(strlen(args[a]) == 4){
+                        // just pick up the second and third chars
+                        mthd = &(char *){args[a][1], args[a][2]};
+                        rcpt = T;
+                    }
+                    else mthd = args[a];
+                }
                 else
                 cmperr("compile method defined multiple times", nil, nil);
             }
