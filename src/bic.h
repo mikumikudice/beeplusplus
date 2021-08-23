@@ -85,12 +85,12 @@ typedef struct hash_table {
 
 // list of string metachars
 imut hash metachar[] = {
-    (hash){.key = "\\'" , .val = "\'"},
-    (hash){.key = "\\\"", .val = "\""},
-    (hash){.key = "\\n" , .val = "\n"},
-    (hash){.key = "\\t" , .val = "\t"},
-    (hash){.key = "\\r" , .val = "\r"},
-    (hash){.key = "\\\\", .val = "\\"},
+    (hash){.key = "*'" , .val = "\'"},
+    (hash){.key = "*\"", .val = "\""},
+    (hash){.key = "*n" , .val = "\n"},
+    (hash){.key = "*t" , .val = "\t"},
+    (hash){.key = "*r" , .val = "\r"},
+    (hash){.key = "**" , .val = "*" },
 };
 
 typedef enum token_type {
