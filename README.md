@@ -23,7 +23,7 @@ auto x, y, z = {2, 4, 8};
 printf("%d\n", x); // prints zero
 printf("%d\n", x / y); // prints zero
 printf("%d\n", z[5]); // prints 4, because 5 % (len - 1) is 1
-printf("%d\n", z[4][2]); // prints 2, because z[4][2] == *(*(z + 4) + 2) == z[(4 + 2) % (len(z) - 1)] == z[0]
+printf("%d\n", z[4][2]); // prints 2, because z[4][2] == z[4 + 2] == z[(4 + 2) % (len(z) - 1)] == z[0]
 ```
 Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to use `x =+ 4` to sum `4` to `x`, thing that C does better, using `x += 4` to express it. But this change only affects arithimetic binary operators, like sum, division, etc. What let us do things like `x =<= 4` (`x = (x <= 4)`). Awesome, right?
 
