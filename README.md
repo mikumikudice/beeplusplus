@@ -77,7 +77,8 @@ And finally, code must be simple to understand and to read. Clean, short and sim
 
 ## Why B?
 I'm an old soul trapped in a young body. I like floppy disks, the idea of a mainframe and old languages (such as Fortran and B). And I like the idea of the roots of C. From where we came from. Also, it's a cannonic language in one of my favorite cartoons.
-<img src="advanced bee++ coding.gif" style="width:680px;height:384px">
+
+<img src="advanced bee++ coding.gif">
 
 ## Learning B++
 Ok, so do you want to code your own little mess with B++? Cool. But first, let's just find out a really important thing: what kind of programmer are you?
