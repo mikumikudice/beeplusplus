@@ -1,5 +1,5 @@
 # B++, bee or incremented B
-The good and old B, but better, smarter, easier and maybe faster. B++ is a compiled, almost functional, notyped, safe, tiny and lit programming language. _All hail B!_
+The good and old B, but better, smarter, easier and maybe faster. B++ is a compiled, almost pure functional, notyped, safe, tiny and lit programming language. _All hail B!_
 
 ## B++
 B++ is Influenced by B, C, Fortran, Rust, Pony and Haskell. The syntax from B/C, old school vibe and math philosofy from Fortran, safety from Rust and Pony and implementation of pure fuctional programming (or almost it) from Haskell.
@@ -22,11 +22,10 @@ Some memory and runtime safety from Pony and Rust (see #Principles of design), l
 auto x, y, z = {2, 4, 8};
 printf("%d\n", x); // prints zero
 printf("%d\n", x / y); // prints zero
-printf("%d\n", z[4]); // prints zero
-printf("%d\n", z[4][2]); // prints 2 because 2 is the first item pointed by the first
-                         // item in Z (we looped 4 to 0, or rest-divided it by the length)
+printf("%d\n", z[5]); // prints 4, because 5 % (len - 1) is 1
+printf("%d\n", z[4][2]); // prints 2, because z[4][2] == *(*(z + 4) + 2) == z[(4 + 2) % (len(z) - 1)] == z[0]
 ```
-Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to use `x =+ 4` to sum `4` to `x`, thing that C does better, using `x += 4` to say it. But this change only affects arithimetic binary operators, like sum, division, etc. What let us do things like `x =<= 4` (`x = (x <= 4)`). Awesome, right?
+Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to use `x =+ 4` to sum `4` to `x`, thing that C does better, using `x += 4` to express it. But this change only affects arithimetic binary operators, like sum, division, etc. What let us do things like `x =<= 4` (`x = (x <= 4)`). Awesome, right?
 
 Some life qualities from [leushenko's](https://github.com/Leushenko/ybc) version of B brings, such as short functions, no need to use `extrn` to just invoke functions, etc.
 ```c
@@ -49,16 +48,16 @@ Status: work in progress (25% completed)
 - [ ] Codegen
     - [ ] optimizations
     - [ ] asm generation
-    - [ ] linking
+    - [ ] assembling and linking
 ### DEVELOPMENT
-Status: work in progress (80% completed)
+Status: work in progress (60% completed)
 - [x] Basic syntax
     - [x] reserved keywords
     - [x] default formating
 - [ ] Design
-    - [x] philosofy
+    - [x] philosophy
     - [ ] how to implement
-        - [x] frontend
+        - [ ] frontend (still deciding)
         - [ ] backend
 
 ## Principles of Design
@@ -77,5 +76,11 @@ Code must be safe. Memory safe, type safe and BIOS proof ("Besta Ignorante Opera
 And finally, code must be simple to understand and to read. Clean, short and simple code. Things can get more complicated if we need to to keep things safe.
 
 ## Why B?
-I'm a old soul trapped in a young body. I like floppy disks, the idea of a mainframe and old languages (such as Fortran and B). And I like the idea of the roots of C. From where we came from. Also, it's a cannonic language in one of my favorite cartoons out there.
+I'm an old soul trapped in a young body. I like floppy disks, the idea of a mainframe and old languages (such as Fortran and B). And I like the idea of the roots of C. From where we came from. Also, it's a cannonic language in one of my favorite cartoons.
 <img src="advanced bee++ coding.gif" style="width:680px;height:384px">
+
+## Learning B++
+Ok, so do you want to code your own little mess with B++? Cool. But first, let's just find out a really important thing: what kind of programmer are you?
+- [I'm a begginer. Like, I don't even know what is programming](doc/Tutorial/BEGINNER.md)
+- [I know python or something like this, but C scares me](doc/Tutorial/INTERMEDIARY.md)
+- [I'm a pro user of the sorcering machines, just tell me how it works](doc/Tutorial/ADVANCED.md)
