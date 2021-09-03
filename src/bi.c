@@ -12,18 +12,18 @@
 
 int main(u16 argc, char ** args){
     FILE * fptr;
-    bool run = F, bld = F;
-    char * lddf, * outf = nil, * mthd = nil, * rcpt = F;
+    bool run = F, bld = F, rcpt = F;
+    char * lddf, * outf = nil, * mthd = nil;
 
     if(argc == 1){
-        printf("B (incremented) Compiler %s - %s copyright(c) Mateus M. D. Souza\n", CVER, DATE);
+        printf("B++ (incremented B) Compiler v%s - %s copyright(c) Mateus M. D. Souza\n", CVER, DATE);
         puts("USAGE:\n\n bi <comp args> [filename]");
 
         puts("\ncomp args:\n");
-        puts("-o: build name; sets the output file name");
-        puts("-r: release build; generates optimized artifacts");
-        puts("-d: debug build; generates unoptimized artifacts");
-        puts("--_b: use with r or d for release and debug; generates an asm file not assembled");
+        puts("-o : build name; sets the output file name");
+        puts("-r : release build; generates optimized artifacts");
+        puts("-d : debug build; generates unoptimized artifacts");
+        puts("-*a: where * is either r or d, for release and debug output; generates an asm file not assembled");
 
         return 0;
     } else {
@@ -39,16 +39,12 @@ int main(u16 argc, char ** args){
             // compilation method
             if(!strcmp(args[a], "-r") // release
             or !strcmp(args[a], "-d") // debug
-            or !strcmp(args[a], "--ra") // release asm
-            or !strcmp(args[a], "--da") // debug asm
+            or !strcmp(args[a], "-ra") // release asm
+            or !strcmp(args[a], "-da") // debug asm
             ){
                 if(mthd == nil){
-                    if(strlen(args[a]) == 4){
-                        // just pick up the second and third chars
-                        mthd = &(char *){args[a][1], args[a][2]};
-                        rcpt = T;
-                    }
-                    else mthd = args[a];
+                    if(strlen(args[a]) == 3) rcpt = T;
+                    mthd = args[a];
                 }
                 else
                 cmperr("compile method defined multiple times", nil, nil);

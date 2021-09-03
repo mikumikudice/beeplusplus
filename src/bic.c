@@ -1,4 +1,4 @@
-#define LSIZE 64 << 8 // max of bytes read per line
+#define LSIZE (8 << 8) // max of bytes read per line
 
 // error messages
 imut char * REALERR = "an unexpected error occurred";
@@ -27,70 +27,65 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     puts("+loading code  ...");
 
     // get source
-    bool isinc = F; // is inside of a comment
-    for(char line[LSIZE]; fgets(line, LSIZE, fptr);){
-        // avoid multiple calls
-        u64 slen = strlen(line);
+    u16 i = 0, csz = LSIZE;
+    bool isinc = F;
+    for(char c = 1; ; c = fgetc(fptr)){
+        // skip non textual chars
+        if(c < 9 and c >= 0) continue;
 
-        // alloc line
-        code.arr[code.len] = malloc(slen + 1);
-        strcpy(code.arr[code.len], line);
+        if(!i)
+            // alloc line
+            code.arr[code.len] = malloc(LSIZE);
 
-        // remove newline
-        code.arr[code.len] = strgsub(code.arr[code.len], "\n", "");
+        if(i < csz)
+        if(c != '\n' and c != EOF)
+            code.arr[code.len][i++] = c;
+        else {
+            code.arr[code.len][i] = '\0';
+            i = 0;
+            // remove newline
+            code.arr[code.len] = strgsub(code.arr[code.len], "\n", "");
 
-        if(!hassym(code.arr[code.len])){
-            // default error arrow
-            token arrw = {
-                .line  = code.len,
-                .coll  = strlen(code.arr[code.len]) - 1
-            };
-            cmperr("expected expression or terminator", &arrw, nil);
-        }
-
-        // check for both quote types
-        for(u16 s = 0; s < 2; s++){
-            u64 fidx = strfnd(code.arr[code.len], strq[s]);
-            if(fidx != -1){
-                // the first up to the last quote
-                u64 lidx = strfndl(code.arr[code.len], strq[s]);
-
-                token arrow = {
-                    .line = code.len,
-                    .coll = strlen(code.arr[code.len]) - 1
+            if(!hassym(code.arr[code.len])){
+                // default error arrow
+                token arrw = {
+                    .line  = code.len,
+                    .coll  = strlen(code.arr[code.len]) - 1
                 };
-                if(lidx == -1) cmperr(UNCLERR, &arrow, nil);
+                cmperr("expected expression or terminator", &arrw, nil);
+            }
 
-                // check count of quotes
-                u64 cnnt = 0;
+            // check for both quote types
+            for(u16 s = 0; s < 2; s++){
+                u64 fidx = strfnd(code.arr[code.len], strq[s]);
+                if(fidx != -1){
+                    // the first up to the last quote
+                    u64 lidx = strfndl(code.arr[code.len], strq[s]);
 
-                // check if the quote count matches
-                for(u64 idx = fidx; idx <= lidx; idx++){
-                    if(code.arr[code.len][idx] == strq[s][0]
-                    and code.arr[code.len][idx - 1] != '\\') cnnt++;
+                    token arrow = {
+                        .line = code.len,
+                        .coll = strlen(code.arr[code.len]) - 1
+                    };
+                    if(lidx == -1) cmperr(UNCLERR, &arrow, nil);
+
+                    // check count of quotes
+                    u64 cnnt = 0;
+
+                    // check if the quote count matches
+                    for(u64 idx = fidx; idx <= lidx; idx++){
+                        if(code.arr[code.len][idx] == strq[s][0]
+                        and code.arr[code.len][idx - 1] != '\\') cnnt++;
+                    }
+
+                    // missing quotes
+                    if(cnnt % 2 != 0)
+                    cmperr(UNCLERR, &arrow, nil);
                 }
-
-                // missing quotes
-                if(cnnt % 2 != 0)
-                cmperr(UNCLERR, &arrow, nil);
             }
-        }
-        // remove comments
-        i64 idx = strfnd(code.arr[code.len], SYMBOLS[SYM_CMM].e);
+            // remove comments
+            i64 idx = strfnd(code.arr[code.len], SYMBOLS[SYM_CMM].e);
 
-        if(idx > -1){
-            char * sub = str_sub(code.arr[code.len], idx, -1);
-            if(strcmp(sub, code.arr[code.len]))
-                code.arr[code.len] = strgsub(code.arr[code.len], sub, "");
-            else {
-                free(code.arr[code.len]);
-                code.arr[code.len] = "";
-            }
-        }
-
-        idx = strfnd(code.arr[code.len], SYMBOLS[SYM_MLC].s);
-        if(idx > -1){
-            if(!isinc){
+            if(idx > -1){
                 char * sub = str_sub(code.arr[code.len], idx, -1);
                 if(strcmp(sub, code.arr[code.len]))
                     code.arr[code.len] = strgsub(code.arr[code.len], sub, "");
@@ -99,28 +94,65 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
                     code.arr[code.len] = "";
                 }
             }
-            isinc = T;
+
+            idx = strfnd(code.arr[code.len], SYMBOLS[SYM_MLC].s);
+            if(idx > -1){
+                if(!isinc){
+                    char * sub = str_sub(code.arr[code.len], idx, -1);
+                    if(strcmp(sub, code.arr[code.len]))
+                        code.arr[code.len] = strgsub(code.arr[code.len], sub, "");
+                    else {
+                        free(code.arr[code.len]);
+                        code.arr[code.len] = "";
+                    }
+                }
+                isinc = T;
+            }
+            idx = strfnd(code.arr[code.len], SYMBOLS[SYM_MLC].e);
+            if(idx > -1 and isinc){
+                // string slice to be ignored
+                char * sub = str_sub(
+                    code.arr[code.len], 0,
+                    idx + strlen(SYMBOLS[SYM_MLC].e) - 1
+                );
+                if(strcmp(sub, code.arr[code.len]))
+                    code.arr[code.len] = strgsub(code.arr[code.len], sub, "");
+                else {
+                    free(code.arr[code.len]);
+                    code.arr[code.len] = "";
+                }
+            }
+
+            // next line
+            code.arr = realloc(code.arr, (code.len + 2) * sizeof(char *));
+            if(!code.arr) cmperr(REALERR, nil, nil);
+
+            code.len++;
+
+            // check it here to avoid
+            // skipping the last char
+            if(c == EOF) break;
         }
-        idx = strfnd(code.arr[code.len], SYMBOLS[SYM_MLC].e);
-        if(idx > -1 and isinc){
-            // string slice to be ignored
-            char * sub = str_sub(
-                code.arr[code.len], 0,
-                idx + strlen(SYMBOLS[SYM_MLC].e) - 1
-            );
-            if(strcmp(sub, code.arr[code.len]))
-                code.arr[code.len] = strgsub(code.arr[code.len], sub, "");
-            else {
-                free(code.arr[code.len]);
-                code.arr[code.len] = "";
+        // grow line
+        else {
+            csz += LSIZE / 2;
+            code.arr[code.len] =
+            realloc(code.arr[code.len], (csz) * sizeof(char *));
+
+            if(!code.arr[code.len]) cmperr(REALERR, nil, nil);
+
+            // first realloc
+            if(csz == LSIZE * 1.5){
+                token arrw = {
+                    .line  = code.len,
+                    .coll  = strlen(code.arr[code.len]) - 1
+                };
+                char * msg = malloc(80);
+                sprintf(msg, "line too long! greater than %d bytes", LSIZE);
+                wrning(msg, &arrw, nil);
+                free(msg);
             }
         }
-
-        // next line
-        code.arr = realloc(code.arr, (code.len + 2) * sizeof(char *));
-        if(!code.arr) cmperr(REALERR, nil, nil);
-
-        code.len++;
     }
     fclose(fptr);
 
@@ -193,7 +225,6 @@ i16 iskeyw(char * str){
     return -1;
 }
 
-char * hextostr(char * str){}
 char * strtohex(char * str){
     // gsub copy
     char * data = malloc(strlen(str) + 1);
@@ -478,4 +509,9 @@ void cmperr(imut char * err, token * arw, void * cmpl){
     fprintf(stderr, "press any key to exit...");
     scanf("nothing");
     exit(-1);
+}
+
+void wrning(imut char * wrn, token * arw, void * cmpl){
+    printf("-warning: %d:%d at %s\n\t%s\n",
+    arw->line, arw->coll, wrn);
 }

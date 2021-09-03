@@ -9,7 +9,8 @@ imut char KEYWORDS[][8] = {
     "null" , "getc" , "putc" ,
     "extrn", "while", "break",
 
-    "switch", "return", "struct", "default"
+    "switch", "return",
+    "struct", "default"
 };
 // list of operators
 imut char OPERATORS[][4] = {
@@ -91,7 +92,7 @@ imut hash metachar[] = {
     (hash){.key = "*t" , .val = "\t"},
     (hash){.key = "*r" , .val = "\r"},
     (hash){.key = "*e" , .val = "\0"},
-    (hash){.key = "**" , .val = "\*"}, // escape char here is not needed but it becomes ugly without it
+    (hash){.key = "**" , .val =  "*"},
 };
 
 typedef enum token_type {
@@ -104,19 +105,20 @@ typedef enum token_type {
 } tknt;
 
 // token
-// ===========================
-// a token that holds a string
-// value and its function role
+// ================================
+// a struct that holds a the string
+// literal, its syntax role and its
+// code positioning (line and coll)
 typedef struct token {
     char * vall;
     tknt   type;
-    size_t line, coll;
+    size_t line, coll; // I know it's column but coll fits better
 } token;
 
 // lexer output
 // ==============================
 // a dynamic array containing all
-// the spited tokens by the lexer
+// the tokens spited by the lexer
 typedef struct lexer_out {
     token * tkns;
     size_t  tknc;
@@ -140,11 +142,12 @@ bool hassym(char * str);
 bool isscpd(char * str, u64 chr);
 i16  iskeyw(char * str);
 
-char * hextostr(char * str);
+//char * hextostr(char * str);
 char * strtohex(char * str);
 char * strtoptr(char * str);
 
 // compilation error
 void cmperr(imut char * err, token * arw, void * cmpl);
+void wrning(imut char * wrn, token * arw, void * cmpl);
 
 #include "bic.c"
