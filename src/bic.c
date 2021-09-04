@@ -15,13 +15,12 @@ imut char * KWRDIDX = "attempt to use a keyword as namespace";
 carr code;
 // header-located string array
 carr sarr;
-// quote literals
-imut char * strq[] = {&metachar[0].val, &metachar[1].val};
 
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     // compiling timer
-    struct timeval crnt, oldt;
-    gettimeofday(&oldt, nil);
+    struct timespec crnt, oldt, diff;
+    double dt;
+    clock_gettime(CLOCK_REALTIME, &oldt);
 
     code.arr = malloc(sizeof(char *));
     puts("+loading code  ...");
@@ -60,10 +59,10 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
 
             // check for both quote types
             for(u16 s = 0; s < 2; s++){
-                u64 fidx = strfnd(code.arr[code.len], strq[s]);
+                u64 fidx = strfnd(code.arr[code.len], metachar[s].val);
                 if(fidx != -1){
                     // the first up to the last quote
-                    u64 lidx = strfndl(code.arr[code.len], strq[s]);
+                    u64 lidx = strfndl(code.arr[code.len], metachar[s].val);
 
                     token arrow = {
                         .line = code.len,
@@ -76,7 +75,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
 
                     // check if the quote count matches
                     for(u64 idx = fidx; idx <= lidx; idx++){
-                        if(code.arr[code.len][idx] == strq[s][0]
+                        if(code.arr[code.len][idx] == metachar[s].val[0]
                         and code.arr[code.len][idx - 1] != '\\') cnnt++;
                     }
 
@@ -170,11 +169,15 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     free(tkns.tkns);
 
     // compilation time
-    gettimeofday(&crnt, nil);
-    f16 dt =
-    (crnt.tv_sec - oldt.tv_sec) * 1000000 + crnt.tv_usec - oldt.tv_usec;
+    clock_gettime(CLOCK_REALTIME, &crnt);
+    diff.tv_sec  = crnt.tv_sec  - oldt.tv_sec;
+    diff.tv_nsec = crnt.tv_nsec - oldt.tv_nsec;
 
-    printf("-compiled %s into %s in %.3fs\n", lddf, outf, dt / 1000);
+    dt = (double)(diff.tv_nsec / 1000);
+    dt /= 1000;
+    dt += diff.tv_sec * 1000;
+
+    printf("-compiled %s into %s in %.3fms\n", lddf, outf, dt);
 }
 
 bool isnumc(char chr){
@@ -294,8 +297,8 @@ lexout lexit(){
                 this.line = l;
 
                 // ignore strings
-                if(src[c] == strq[0][0]
-                or src[c] == strq[1][0]){
+                if(src[c] == metachar[0].val[0]
+                or src[c] == metachar[1].val[0]){
                     bool issc = isscpd(src, c);
                     // in and out of string
                     if(!issc) isstr = !isstr;
@@ -310,7 +313,7 @@ lexout lexit(){
                             metachar[mc].key, metachar[mc].val);
                         }
                         // it's a doubleword char
-                        if(src[c] == strq[0][0]){
+                        if(src[c] == metachar[0].val[0]){
                             // slice it
                             if(strlen(dummy) > 4){
                                 char * temp = dummy;
