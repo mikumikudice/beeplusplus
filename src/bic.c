@@ -15,14 +15,14 @@ imut char * KWRDIDX = "attempt to use a keyword as namespace";
 carr code;
 // header-located string array
 carr sarr;
-imut char * strq[] = {"'", "\""};
+// quote literals
+imut char * strq[] = {&metachar[0].val, &metachar[1].val};
 
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     // compiling timer
     struct timeval crnt, oldt;
     gettimeofday(&oldt, nil);
 
-    sarr.arr = nil;
     code.arr = malloc(sizeof(char *));
     puts("+loading code  ...");
 
@@ -33,10 +33,13 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
         // skip non textual chars
         if(c < 9 and c >= 0) continue;
 
-        if(!i)
+        // first char of line
+        if(!i){
             // alloc line
             code.arr[code.len] = malloc(LSIZE);
-
+            // resset length
+            csz = LSIZE;
+        }
         if(i < csz)
         if(c != '\n' and c != EOF)
             code.arr[code.len][i++] = c;
