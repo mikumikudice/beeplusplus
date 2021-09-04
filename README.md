@@ -42,9 +42,8 @@ Status: work in progress (25% completed)
     - [x] loader
     - [x] lexer
 - [ ] Prossessing
-    - [ ] syntax analysis
-    - [ ] parser
-    - [ ] semantic analysis
+    - [ ] syntax analysis (check if everything is ok)
+    - [ ] parser (ast generation)
 - [ ] Codegen
     - [ ] optimizations
     - [ ] asm generation
@@ -79,9 +78,3 @@ And finally, code must be simple to understand and to read. Clean, short and sim
 I'm an old soul trapped in a young body. I like floppy disks, the idea of a mainframe and old languages (such as Fortran and B). And I like the idea of the roots of C. From where we came from. Also, it's a cannonic language in one of my favorite cartoons.
 
 <img src="advanced bee++ coding.gif">
-
-## Learning B++
-Ok, so do you want to code your own little mess with B++? Cool. But first, let's just find out a really important thing: what kind of programmer are you?
-- [I'm a begginer. Like, I don't even know what is programming](doc/Tutorial/BEGINNER.md)
-- [I know python or something like this, but C scares me](doc/Tutorial/INTERMEDIARY.md)
-- [I'm a pro user of the sorcering machines, just tell me how it works](doc/Tutorial/ADVANCED.md)
