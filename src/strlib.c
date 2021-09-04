@@ -148,7 +148,6 @@ ssize_t stk_strarrfnd(char ** arr, char * val){
     return -1;
 }
 
-
 // remember that str is freed after calling
 char * str_sub(char * str, ssize_t i, ssize_t f){
     // sugar indexes
@@ -239,5 +238,14 @@ char * strtrim(char * str){
     char * out = str_sub(str, stt, end + 1);
     free(str);
 
+    return out;
+}
+
+char * strpush(char * str, char * otr){
+    char * out = malloc(strlen(str) + strlen(otr) + 1);
+    strcpy(out, str);
+    free(str);
+
+    strcpy(out + strlen(out), otr);
     return out;
 }

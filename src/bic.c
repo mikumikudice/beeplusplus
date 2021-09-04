@@ -29,7 +29,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     // get source
     u16 i = 0, csz = LSIZE;
     bool isinc = F;
-    for(char c = 1; ; c = fgetc(fptr)){
+    for(char c = 1; c = fgetc(fptr);){
         // skip non textual chars
         if(c < 9 and c >= 0) continue;
 
@@ -225,16 +225,13 @@ i16 iskeyw(char * str){
     return -1;
 }
 
-char * strtohex(char * str){
-    // gsub copy
-    char * data = malloc(strlen(str) + 1);
-    strcpy(data, str);
-    free(str);
-
-    u16 len = sizeof(metachar) / sizeof(metachar[0]);
+char * strtohex(char * data){
+    // avoid too many calls
+    u16 len = arrlen(metachar);
     for(u16 mc = 0; mc < len; mc++){
         data = strgsub(data, metachar[mc].key, metachar[mc].val);
     }
+
     // keep it in memory
     char temp[strlen(data) + 1];
     strcpy(temp, data);
@@ -247,6 +244,9 @@ char * strtohex(char * str){
     for(u64 c = 0; c < strlen(temp); c++){
         sprintf(data, "%s%.2x", data, temp[c]);
     }
+    // keep length constant
+    if(strlen(data) < 10) data = strpush(data, "00");
+
     return data;
 }
 

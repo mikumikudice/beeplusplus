@@ -22,6 +22,8 @@ char * str_sub(char * str, ssize_t i , ssize_t f);
 char * strgsub(char * str, const char * pat, char * sup);
 char * strtrim(char * str);
 
+char * strpush(char * str, char * otr);
+
 #define startswith(str, pat) \
 !strncmp(str, pat, strlen(pat))
 
