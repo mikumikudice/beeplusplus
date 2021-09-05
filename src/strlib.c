@@ -14,7 +14,7 @@
     #include <ctype.h>
 #endif
 
-size_t strarrlen(char ** arr, size_t len){
+size_t strarrlen(char ** arr, u64 len){
 
     size_t out = 0;
     for(size_t i = 0; i < len; i++){out += sizeof(arr[i]);}
@@ -71,7 +71,7 @@ ssize_t strfndl(char * str, const char * pat){
 }
 
 // offseted search
-ssize_t strafnd(char * str, const char * pat, ssize_t off){
+ssize_t strafnd(char * str, const char * pat, i64 off){
     // avoid a lot of calls
     size_t size = strlen(str);
     size_t ptsz = strlen(pat);
@@ -79,8 +79,8 @@ ssize_t strafnd(char * str, const char * pat, ssize_t off){
     // check args
     if(off < 0) off = size + off;
     if(off > size){
-        fprintf(stderr, "[%s, %s, %d] index out of range"\
-        " (%d [offset] > %d [strlen])\n",
+        fprintf(stderr, "[%s, %s, %ld] index out of range"\
+        " (%ld [offset] > %ld [strlen])\n",
         str, pat, off, off, size);
         exit(-1);
     }
@@ -130,7 +130,7 @@ size_t strfndc(char * str, const char * pat){
     return cnnt;
 }
 
-ssize_t str_arrfnd(char ** arr, const char * val, size_t len){
+ssize_t str_arrfnd(char ** arr, const char * val, u64 len){
     for(u16 i = 0; i < strarrlen(arr, len) / sizeof(arr); i++){
         // check every item in array
         if(!strcmp(arr[i], val)) return i;
@@ -149,22 +149,22 @@ ssize_t stk_strarrfnd(char ** arr, char * val){
 }
 
 // remember that str is freed after calling
-char * str_sub(char * str, ssize_t i, ssize_t f){
+char * str_sub(char * str, i64 i, i64 f){
     // sugar indexes
     if(i < 0) i = strlen(str) + i + 1;
     if(f < 0) f = strlen(str) + f + 1;
 
     // invalid slices
     if(i < 0 or i > f){
-        fprintf(stderr, "[%s, %d, %d] index out of range"\
-        " (%d [arg 0] > %d [arg 1])\n", str,
+        fprintf(stderr, "[args: %s, %ld, %ld] index out of range"\
+        " (%ld [arg 0] > %ld [arg 1])\n", str,
         i, f, i > 0 ? i : 0, f > i ? i : f);
 
         exit(-1);
     }
     if(f > strlen(str) + 1){
-        fprintf(stderr, "[%s, %d, %d] index out of range"\
-        " (%d [arg 1] > %d [str len])\n",
+        fprintf(stderr, "[args: %s, %ld, %ld] index out of range"\
+        " (%ld [arg 1] > %ld [str len])\n",
         str, i, f, f, strlen(str));
 
         exit(-1);
