@@ -1,2 +1,2 @@
 set -e
-gcc -g ./src/bi.c -o ./bin/bi.bin -fsanitize=leak,address
+gcc -g -Wall -Wno-dangling-else -Wno-unused-variable ./src/bi.c -o ./bin/bi -fsanitize=leak,address

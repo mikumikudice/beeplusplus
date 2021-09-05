@@ -1,2 +1,2 @@
 set -e
-gcc ./src/bi.c -o ./bin/bi.bin
+gcc ./src/bi.c -o ./bin/bi

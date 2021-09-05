@@ -1,5 +1,5 @@
 .[^(gitattributes)]*
 TODO
-bi.bin
+bi
 bi.exe
 run_valgrind.sh
