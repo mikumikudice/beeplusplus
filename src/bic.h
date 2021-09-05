@@ -147,7 +147,8 @@ char * strtohex(char * str);
 char * strtoptr(char * str);
 
 // compilation error
-void cmperr(imut char * err, token * arw, void * cmpl);
-void wrning(imut char * wrn, token * arw, void * cmpl);
+void assert(bool check, char * msg);
+void cmperr(imut char * err, token * arw, token * cmpl);
+void wrning(imut char * wrn, token * arw, token * cmpl);
 
 #include "bic.c"
