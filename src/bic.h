@@ -27,9 +27,11 @@ imut char OPERATORS[][4] = {
     "*" , "*=" ,
     "/" , "/=" ,
     "%" , "%=" ,
-    // bitwise operators
+    // boolean operators
+    "and", "or",
     "|" , "||" , "=|" , "=||",
     "&" , "&&" , "=&" , "=&&",
+    // bitwise operators
     "^" , "=^" ,
     "~" , "=~" ,
     ">>", "=>>",
