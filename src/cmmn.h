@@ -9,4 +9,5 @@
 #include "strlib.h"
 
 #include <math.h>
+#include <time.h>
 #include <sys/time.h>

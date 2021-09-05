@@ -4,13 +4,9 @@
 #define CVER "0.0.1"
 #define DATE "2021"
 
-#ifdef _WIN32
-    #include <io.h>
-#else
-    #include <unistd.h>
-#endif
+#include <unistd.h>
 
-int main(u16 argc, char ** args){
+int main(i32 argc, char ** args){
     FILE * fptr;
     bool run = F, bld = F, rcpt = F;
     char * lddf, * outf = nil, * mthd = nil;

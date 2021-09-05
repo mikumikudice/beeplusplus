@@ -150,6 +150,4 @@ char * strtoptr(char * str);
 void cmperr(imut char * err, token * arw, void * cmpl);
 void wrning(imut char * wrn, token * arw, void * cmpl);
 
-#include <sys/time.h>
-#include <time.h>
 #include "bic.c"

@@ -28,7 +28,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     // get source
     u16 i = 0, csz = LSIZE;
     bool isinc = F;
-    for(char c = 1; c = fgetc(fptr);){
+    for(char c = 1; (c = fgetc(fptr));){
         // skip non textual chars
         if(c < 9 and c >= 0) continue;
 
@@ -45,8 +45,6 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
         else {
             code.arr[code.len][i] = '\0';
             i = 0;
-            // remove newline
-            code.arr[code.len] = strgsub(code.arr[code.len], "\n", "");
 
             if(!hassym(code.arr[code.len])){
                 // default error arrow
@@ -82,46 +80,6 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
                     // missing quotes
                     if(cnnt % 2 != 0)
                     cmperr(UNCLERR, &arrow, nil);
-                }
-            }
-            // remove comments
-            i64 idx = strfnd(code.arr[code.len], SYMBOLS[SYM_CMM].e);
-
-            if(idx > -1){
-                char * sub = str_sub(code.arr[code.len], idx, -1);
-                if(strcmp(sub, code.arr[code.len]))
-                    code.arr[code.len] = strgsub(code.arr[code.len], sub, "");
-                else {
-                    free(code.arr[code.len]);
-                    code.arr[code.len] = "";
-                }
-            }
-
-            idx = strfnd(code.arr[code.len], SYMBOLS[SYM_MLC].s);
-            if(idx > -1){
-                if(!isinc){
-                    char * sub = str_sub(code.arr[code.len], idx, -1);
-                    if(strcmp(sub, code.arr[code.len]))
-                        code.arr[code.len] = strgsub(code.arr[code.len], sub, "");
-                    else {
-                        free(code.arr[code.len]);
-                        code.arr[code.len] = "";
-                    }
-                }
-                isinc = T;
-            }
-            idx = strfnd(code.arr[code.len], SYMBOLS[SYM_MLC].e);
-            if(idx > -1 and isinc){
-                // string slice to be ignored
-                char * sub = str_sub(
-                    code.arr[code.len], 0,
-                    idx + strlen(SYMBOLS[SYM_MLC].e) - 1
-                );
-                if(strcmp(sub, code.arr[code.len]))
-                    code.arr[code.len] = strgsub(code.arr[code.len], sub, "");
-                else {
-                    free(code.arr[code.len]);
-                    code.arr[code.len] = "";
                 }
             }
 
@@ -162,7 +120,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     lexout tkns = lexit();
 
     for(u64 t = 0; t < tkns.tknc; t++){
-        printf("[%s] %d %d %d\n",
+        printf("[%s] %ld %ld %d\n",
         tkns.tkns[t].vall, tkns.tkns[t].line, tkns.tkns[t].coll, tkns.tkns[t].type);
         free(tkns.tkns[t].vall);
     }
@@ -246,9 +204,12 @@ char * strtohex(char * data){
     data = malloc(strlen(temp) * 2 + 3);
     sprintf(data, "0x");
 
+    char othr[strlen(temp) * 2 + 3];
+
     // convert string to hex code
     for(u64 c = 0; c < strlen(temp); c++){
-        sprintf(data, "%s%.2x", data, temp[c]);
+        strcpy(othr, data);
+        sprintf(data, "%s%.2x", othr, temp[c]);
     }
     // keep length constant
     if(strlen(data) < 10) data = strpush(data, "00");
@@ -273,9 +234,7 @@ lexout lexit(){
 
     // current line
     for(u64 l = 0; l < code.len; l++){
-
-        u64 col = 0;               // last token's column
-        u64 lvl = 0;               // scope level
+        u64 col = 0;                   // last token's column
         u64 lsz = strlen(code.arr[l]); // line length
 
         char * src = malloc(lsz + 1);
@@ -501,11 +460,11 @@ void cmperr(imut char * err, token * arw, void * cmpl){
     // common prefix
     fprintf(stderr, "[ERROR] %s", err);
     if(arw)
-    fprintf(stderr, " at %d:%d:\n", arw->line + 1, arw->coll + 1);
+    fprintf(stderr, " at %ld:%ld:\n", arw->line + 1, arw->coll + 1);
     else fprintf(stderr, "\n");
 
     if(arw){
-        fprintf(stderr, "\n\t%d | %s\n\t", arw->line + 1, code.arr[arw->line]);
+        fprintf(stderr, "\n\t%ld | %s\n\t", arw->line + 1, code.arr[arw->line]);
         fflush(stderr);
 
         for(u16 i = 0; i < arw->coll + 4; i++){fprintf(stderr, " ");}
@@ -518,6 +477,6 @@ void cmperr(imut char * err, token * arw, void * cmpl){
 }
 
 void wrning(imut char * wrn, token * arw, void * cmpl){
-    printf("-warning: %d:%d at %s\n\t%s\n",
+    printf("-warning at %ld:%ld\n\t%s\n",
     arw->line, arw->coll, wrn);
 }
