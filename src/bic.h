@@ -6,8 +6,8 @@
 imut char KEYWORDS[][8] = {
     "if"   , "else" , "case" , "auto" ,
     "for"  , "while", "goto" , "break",
-    "getc" , "putc" , "print", "null" ,
-    "extrn",
+    "getc" , "putc" , "print", "flush",
+    "extrn", "nil"
 
     "length", "switch", "return",
     "sizeof", "struct", "default"
