@@ -4,13 +4,13 @@
 
 // list of the reserved keywords
 imut char KEYWORDS[][8] = {
-    "if"   , "for"  ,
-    "else" , "auto" , "case" , "goto" ,
-    "null" , "getc" , "putc" ,
-    "extrn", "while", "break",
+    "if"   , "else" , "case" , "auto" ,
+    "for"  , "while", "goto" , "break",
+    "getc" , "putc" , "print", "null" ,
+    "extrn",
 
-    "switch", "return",
-    "struct", "default"
+    "length", "switch", "return",
+    "sizeof", "struct", "default"
 };
 // list of operators
 imut char OPERATORS[][4] = {
