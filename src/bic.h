@@ -7,10 +7,11 @@ imut char KEYWORDS[][8] = {
     "if"   , "else" , "case" , "auto" ,
     "for"  , "while", "goto" , "break",
     "getc" , "putc" , "print", "flush",
-    "extrn", "nil"
+    "array", "value", "func" ,
+    "extrn", "nil"  ,
 
-    "length", "switch", "return",
-    "kindof", "sizeof", "struct",
+    "length", "kindof", "sizeof",
+    "struct", "switch", "return",
     "default"
 };
 // list of operators
