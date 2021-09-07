@@ -8,7 +8,7 @@
 
 int main(i32 argc, char ** args){
     FILE * fptr;
-    bool   nasm = F, tidx = F, opts = T;
+    bool   nasm = F, tidx = F, opts = T, strp = F;
     char * lddf, * outf = nil, * mthd = nil;
 
     if(argc == 1){
@@ -39,8 +39,6 @@ int main(i32 argc, char ** args){
             else
             if(!strcmp(args[a], "-r") // release
             or !strcmp(args[a], "-d") // debug
-            or !strcmp(args[a], "-ra") // release asm
-            or !strcmp(args[a], "-da") // debug asm
             ){
                 if(mthd == nil){
                     if(strlen(args[a]) == 3) nasm = T;
@@ -49,6 +47,14 @@ int main(i32 argc, char ** args){
                 else
                 cmperr("compilation method defined multiple times", nil, nil);
             }
+            else if(!strcmp(args[a], "-s"))
+                if(!strp) strp = T;
+                else cmperr("compilation flag defined multiple times", nil, nil);
+
+            else if(!strcmp(args[a], "-S"))
+                if(!nasm) nasm = T;
+                else cmperr("compilation flag defined multiple times", nil, nil);
+
             // compilation flags
             else if(!strcmp(args[a], "--trackidx"))
                 if(!tidx) tidx = T;
