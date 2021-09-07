@@ -8,18 +8,21 @@
 
 int main(i32 argc, char ** args){
     FILE * fptr;
-    bool run = F, bld = F, rcpt = F;
+    bool   nasm = F, tidx = F, opts = T;
     char * lddf, * outf = nil, * mthd = nil;
 
     if(argc == 1){
         printf("B++ (incremented B) Compiler v%s - %s copyright(c) Mateus M. D. Souza\n", CVER, DATE);
-        puts("USAGE:\n\n bi <comp args> [filename]");
+        puts("USAGE:\n\n bi <comp args> <debug flags> [filename]");
 
         puts("\ncomp args:\n");
         puts("-o : build name; sets the output file name");
         puts("-r : release build; generates optimized artifacts");
         puts("-d : debug build; generates unoptimized artifacts");
-        puts("-*a: where * is either r or d, for release and debug output; generates an asm file not assembled");
+        puts("-s : target file is striped to be shorter");
+        puts("-S : generates an asm file not assembled");
+        puts("\ndebug flags:");
+        puts("--trackidx : prints a suffix telling when an indexing overflow happen");
 
         return 0;
     } else {
@@ -33,18 +36,23 @@ int main(i32 argc, char ** args){
                     cmperr("multiple out-file definitions", nil, nil);
 
             // compilation method
+            else
             if(!strcmp(args[a], "-r") // release
             or !strcmp(args[a], "-d") // debug
             or !strcmp(args[a], "-ra") // release asm
             or !strcmp(args[a], "-da") // debug asm
             ){
                 if(mthd == nil){
-                    if(strlen(args[a]) == 3) rcpt = T;
+                    if(strlen(args[a]) == 3) nasm = T;
                     mthd = args[a];
                 }
                 else
-                cmperr("compile method defined multiple times", nil, nil);
+                cmperr("compilation method defined multiple times", nil, nil);
             }
+            // compilation flags
+            else if(!strcmp(args[a], "--trackidx"))
+                if(!tidx) tidx = T;
+                else cmperr("compilation flag defined multiple times", nil, nil);
         }
         // check file
         if(access(args[argc - 1], F_OK))
