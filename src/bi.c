@@ -12,7 +12,8 @@ int main(i32 argc, char ** args){
     char * lddf, * outf = nil, * mthd = nil;
 
     if(argc == 1){
-        printf("B++ (incremented B) Compiler v%s - %s copyright(c) Mateus M. D. Souza\n", CVER, DATE);
+        printf("B++ (incremented B) Compiler v%s - %s "\
+        "copyright(c) Mateus M. D. Souza\n", CVER, DATE);
         puts("USAGE:\n\n bi <comp args> <debug flags> [filename]");
 
         puts("\ncomp args:\n");
@@ -22,7 +23,7 @@ int main(i32 argc, char ** args){
         puts("-s : target file is striped to be shorter");
         puts("-S : generates an asm file not assembled");
         puts("\ndebug flags:");
-        puts("--trackidx : prints a suffix telling when an indexing overflow happen");
+        puts("--trackidx : prints a suffix warning when an indexing overflow happen");
 
         return 0;
     } else {
