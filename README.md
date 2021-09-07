@@ -33,7 +33,7 @@ sum(x, y) x + y; // returns x + y
 
 main(){
     printf("%d\n", sum(8, 234)); // prints 242
-}
+};
 ```
 Also single line multiple assignment, like:
 ```c
