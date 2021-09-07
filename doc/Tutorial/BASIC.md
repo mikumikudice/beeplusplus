@@ -202,19 +202,20 @@ main(){
 To use a fuction from another file you do the same thing.
 ```c
 // main.bi
-extrn print
+extrn puts
 
 main(){
-    print("hello world");
+    puts("hello world");
 };
 ```
 In another file
 ```c
 // print.bi
-print(str){
+puts(str){
     for(auto c = 0; c < length(str); c++){
         putc(str[c]);
     };
+    putc('*n');
 };
 ```
 Then compile them with `bi main.bi print.bi`. Note that you can't define an function within another. Actually, no constant namespace can be defined in inner scopes (inner than the global scope);
