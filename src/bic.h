@@ -10,7 +10,8 @@ imut char KEYWORDS[][8] = {
     "extrn", "nil"
 
     "length", "switch", "return",
-    "sizeof", "struct", "default"
+    "kindof", "sizeof", "struct",
+    "default"
 };
 // list of operators
 imut char OPERATORS[][4] = {
