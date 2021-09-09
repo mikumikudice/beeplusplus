@@ -9,7 +9,7 @@ B++ is Influenced by B, C, Fortran, Rust, Pony and Haskell. The syntax from B/C,
 
 ## What's new?
 Glad you asked. Now we have structures (no more variables named with dots), implemented behind-the-scenes as a array which items have aliases.
-```C
+```c
 struct foo {
     x, y;
 };
@@ -18,7 +18,7 @@ auto bar = foo{6, 7};
 putc(48 + bar.x); // equivalent to 48 + bar[0] | prints '6'
 ```
 Some memory and runtime safety from Pony and Rust (see #Principles of design), like safe division, looped read from pointers, and 0-filled uninitialized data.
-```C
+```c
 auto x, y, z = {2, 4, 8};
 printf("%d\n", x); // prints zero
 printf("%d\n", x / y); // prints zero
@@ -72,7 +72,7 @@ Status: work in progress (completed)
 - [ ] External code documentation
 
 ## Principles of Design
-The design is simple. We must grant 4 things, the above one is more important than the bellow one and so on.
+The design is simple. We must grant 4 things, the item above is more important than the below one and so on.
 
 ### Readability
 Code must be understandable both for humans and computers. Nothing is more important than a well-writen code. Documentation is the pillar of all good programs, so keep it documented!
@@ -96,7 +96,7 @@ Requires (program for Linux only):
 * gcc (v >= 8)
 * stdio.h, stdlib.h, string.h, time.h, sys/time.h, unistd.h (probably all of it is already installed)
 
-Run `build.sh` for debugging (this mode add address sanitizers and disable optimizations);<br/>
+Run `build.sh` for debugging (this mode adds address sanitizers and disable optimizations);<br/>
 Run `build_release.sh` for release compilation (optimized).
 
 ## Learning B++
