@@ -68,7 +68,7 @@ int main(i32 argc, char ** args){
         else
         lddf = args[argc - 1];
 
-        if(outf == nil) outf = "out.o";
+        if(outf == nil) outf = "a.out";
         if(mthd == nil) mthd = "-d";
         fptr = fopen(lddf, "r");
 
