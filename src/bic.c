@@ -19,9 +19,8 @@ carr sarr;
 
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     // compiling timer
-    struct timespec crnt, oldt, diff;
-    double dt;
-    clock_gettime(CLOCK_REALTIME, &oldt);
+    clock_t crnt, oldt;
+    oldt = clock();
 
     code.arr = malloc(sizeof(char *));
     puts("+loading code  ...");
@@ -30,7 +29,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     char l = 0, o = 0;
     u64 i = 0, csz = LSIZE, cmtl = 0;
     bool isinc = F, isins = F;
-    for(char c = 1; 1; c = fgetc(fptr)){
+    for(char c; (c = fgetc(fptr));){
         // skip non textual chars
         if(c < 9 and c >= 0) continue;
 
@@ -163,15 +162,10 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     free(tkns.tkns);
 
     // compilation time
-    clock_gettime(CLOCK_REALTIME, &crnt);
-    diff.tv_sec  = crnt.tv_sec  - oldt.tv_sec;
-    diff.tv_nsec = crnt.tv_nsec - oldt.tv_nsec;
+    crnt = clock();
+    f32 dt = ((double)(crnt - oldt)) / CLOCKS_PER_SEC; 
 
-    dt = (double)(diff.tv_nsec / 1000);
-    dt /= 1000;
-    dt += diff.tv_sec * 1000;
-
-    printf("-compiled %s into %s in %.3fms\n", lddf, outf, dt);
+    printf("-compiled %s into %s in %.5fs\n", lddf, outf, dt);
 }
 
 bool isnumc(char chr){
