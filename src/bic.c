@@ -589,9 +589,15 @@ void cmperr(imut char * err, token * arw, token * cmpl){
         fprintf(stderr, DEF);
         fflush(stderr);
 
-        for(u16 i = 0; i < arw->coll + 4; i++){fprintf(stderr, " ");}
+        fprintf(stderr, RED);
+        for(u16 i = 0; i < arw->coll + 4; i++){
+            if(i > 3) fprintf(stderr, "~");
+            else fprintf(stderr, " ");
+        }
         fflush(stderr);
+
         fprintf(stderr, "^\n");
+        fprintf(stderr, DEF);
     }
     if(cmpl != nil){
         fprintf(stderr, cmpl->vall);
