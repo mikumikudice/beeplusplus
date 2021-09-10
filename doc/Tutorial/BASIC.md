@@ -82,14 +82,14 @@ auto foo, bar;
 foo = 66;
 bar = 'B';
 
-printf("%d*n", foo == bar); // prints 
+printf("%d*n", foo == bar); // prints 1
 ```
 Notype means that everything is treated as a 32-bit integer value (no floats by default), but these values can be represented by literal numbers, char literals and addresses.
 
 You can use short assignment to variables like you do in Lua and Python:
 ```c
 auto x, y, z = 1, 3, 5;
-printf("%d %d %d*n", z, y, x); prints 5, 3, 1
+printf("%d %d %d*n", z, y, x); // prints 5, 3, 1
 ```
 C-like assigment works too
 ```c
@@ -177,7 +177,7 @@ struct car {
 auto modelx = car {alexa, "model x"};
 printf("%d*n", modelx.owner.age); // same of modelx[0][0]
 ```
-When indexing a not-array value, you'll always get the value itself. It works something like "get the n-th value of this literal array", but the array has only a value, that is the array itself.
+When indexing a not-array value, you'll always get the value itself. It works something like "get the n-th value of this literal array", but the array has only one value, that is the array itself.
 
 ### High-order functions and call external code
 You can pass a function as parameter to another function with no problem, but first you have to declare it as a local value in the current context.

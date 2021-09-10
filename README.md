@@ -25,7 +25,7 @@ printf("%d\n", x / y); // prints zero
 printf("%d\n", z[5]); // prints 8, because 5 % length is 2
 printf("%d\n", z[4][2]); // prints 4, because z[4][2] == z[4 % length][2] == 4[2 % 1] == 4
 ```
-Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to use `x =+ 4` to sum `4` to `x`, thing that C does better, using `x += 4` to express it. But this change only affects arithmetic binary operators, like sum, division, etc. What let us do things like `x =<= 4` (`x = (x <= 4)`). Awesome, right?
+Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to use `x =+ 4` to sum `4` to `x`, thing that C does better, using `x += 4` to express it. But in B++ this change only affects arithmetic binary operators, like sum, division, etc. What let us do things like `x =<= 4` (`x = (x <= 4)`). Awesome, right?
 
 Some life qualities from [leushenko's](https://github.com/Leushenko/ybc) version of B brings, such as short functions, no need to use `extrn` to just invoke functions, etc.
 ```c
@@ -66,10 +66,10 @@ Status: work in progress (50% completed)
         - [ ] frontend (still deciding)
         - [ ] backend
 ### Documentation
-Status: work in progress (completed)
+Status: work in progress (33% completed)
 - [ ] Tutorial
 - [x] Code commenting
-- [ ] External code documentation
+- [ ] Additional code documentation
 
 ## Principles of Design
 The design is simple. We must grant 4 things, the item above is more important than the below one and so on.
