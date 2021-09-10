@@ -27,10 +27,12 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     puts("+loading code  ...");
     COL(DEF);
 
-    // get source
     char l = 0, o = 0;
-    u64 i = 0, csz = LSIZE, cmtl = 0;
-    bool isinc = F, isins = F;
+    i64 cmtl = 0;
+    u64 i = 0, csz = LSIZE;
+
+    // get source
+    bool isinc = F, isins = F, wait_err = F;
     for(char c; (c = fgetc(fptr));){
         // skip non textual chars
         if(c < 9 and c >= 0) continue;
@@ -43,7 +45,8 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
         // exit multiline comment
         if(c == '/' and l == '*' and !isins){
             cmtl--;
-            if(!cmtl) isinc = F;
+            if(cmtl == 0) isinc = F;
+            else if(cmtl < 0 and !wait_err) wait_err = i;
         }
         // ignore symbols inside of strings
         if(isins){
@@ -99,6 +102,14 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
 
         else {
             code.arr[code.len][i] = '\0';
+
+            if(wait_err){
+                token arrw = {
+                    .line  = code.len,
+                    .coll  = wait_err - 1,
+                };
+                cmperr(UNEXPCT, &arrw, nil);
+            }
             i = 0;
 
             if(!isinc){
