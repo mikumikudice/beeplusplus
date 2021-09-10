@@ -1,4 +1,4 @@
-#define LSIZE (8 << 8) // max of bytes read per line
+#define LSIZE (64 << 1) // max of bytes read per line
 
 // error messages
 imut char * REALERR = "an unexpected error occurred";
@@ -23,7 +23,9 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     oldt = clock();
 
     code.arr = malloc(sizeof(char *));
+    COL(GRN);
     puts("+loading code  ...");
+    COL(DEF);
 
     // get source
     char l = 0, o = 0;
@@ -80,12 +82,13 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
 
             // first realloc
             if(csz == LSIZE * 1.5){
+                assert(code.arr[code.len] == nil, UNEXPCT);
                 token arrw = {
                     .line  = code.len,
-                    .coll  = strlen(code.arr[code.len]) - 1
+                    .coll  = i,
                 };
                 char * msg = malloc(80);
-                sprintf(msg, "line too long! greater than %d bytes", LSIZE);
+                sprintf(msg, "line too long! greater than %s%d bytes%s", YEL, LSIZE, DEF);
                 wrning(msg, &arrw, nil);
                 free(msg);
             }
@@ -151,7 +154,10 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     }
     fclose(fptr);
 
+    COL(GRN);
     puts("+lexing code   ...");
+    COL(DEF);
+
     lexout tkns = lexit();
 
     for(u64 t = 0; t < tkns.tknc; t++){
@@ -165,7 +171,10 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     crnt = clock();
     f32 dt = ((double)(crnt - oldt)) / CLOCKS_PER_SEC; 
 
-    printf("-compiled %s into %s in %.5fs\n", lddf, outf, dt);
+    printf("-compiled %s into %s in ", lddf, outf);
+    COL(GRN);
+    printf("%.5fs\n", dt);
+    COL(DEF);
 }
 
 bool isnumc(char chr){
@@ -541,22 +550,32 @@ bool vld_args(char * path){return T;}
 bool vld_expr(char * path){return T;}
 bool vld_scop(char * path){return T;}
 
-void assert(bool check, char * msg){
+void assert(bool check, imut char * msg){
     if(check){
-        fprintf(stderr, "[ERROR]: %s\n", msg);
+        fprintf(stderr, RED);
+        fprintf(stderr, "[ERROR]");
+        fprintf(stderr, DEF);
+
+        fprintf(stderr, ": %s\n", msg);
         exit(-1);
     }
 }
 
 void cmperr(imut char * err, token * arw, token * cmpl){
     // common prefix
-    fprintf(stderr, "[ERROR] %s", err);
+    fprintf(stderr, RED);
+    fprintf(stderr, "[ERROR]");
+    fprintf(stderr, DEF);
+
+    fprintf(stderr, " %s", err);
     if(arw)
     fprintf(stderr, " at %ld:%ld:\n", arw->line + 1, arw->coll + 1);
     else fprintf(stderr, "\n");
 
     if(arw){
+        fprintf(stderr, BLU);
         fprintf(stderr, "\n\t%ld | %s\n\t", arw->line + 1, code.arr[arw->line]);
+        fprintf(stderr, DEF);
         fflush(stderr);
 
         for(u16 i = 0; i < arw->coll + 4; i++){fprintf(stderr, " ");}
@@ -570,8 +589,10 @@ void cmperr(imut char * err, token * arw, token * cmpl){
         fprintf(stderr, " at %ld:%ld:\n",
         cmpl->line + 1, cmpl->coll + 1);
 
+        fprintf(stderr, BLU);
         fprintf(stderr, "\n\t%ld | %s\n\t",
         cmpl->line + 1, code.arr[cmpl->line]);
+        fprintf(stderr, DEF);
         fflush(stderr);
 
         for(u16 i = 0; i < cmpl->coll + 4; i++){fprintf(stderr, " ");}
@@ -584,6 +605,9 @@ void cmperr(imut char * err, token * arw, token * cmpl){
 }
 
 void wrning(imut char * wrn, token * arw, token * cmpl){
-    printf("-warning at %ld:%ld\n\t%s\n",
+    COL(YEL);
+    printf("[WARNING]");
+    COL(DEF);
+    printf(" at %ld:%ld\n\t%s\n",
     arw->line, arw->coll, wrn);
 }

@@ -9,3 +9,4 @@
 #include "strlib.h"
 
 #include <time.h>
+#include "cols.h"

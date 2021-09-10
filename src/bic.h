@@ -151,7 +151,7 @@ char * strtohex(char * str);
 char * strtoptr(char * str);
 
 // compilation error
-void assert(bool check, char * msg);
+void assert(bool check, imut char * msg);
 void cmperr(imut char * err, token * arw, token * cmpl);
 void wrning(imut char * wrn, token * arw, token * cmpl);
 
