@@ -7,8 +7,8 @@ imut char KEYWORDS[][8] = {
     "if"   , "else" , "case" , "auto" ,
     "for"  , "while", "goto" , "break",
     "getc" , "putc" , "print", "flush",
-    "array", "value", "func" ,
-    "extrn", "nil"  ,
+    "array", "value", "func" , "extrn",
+    "alloc", "free" , "nil"  ,
 
     "length", "kindof", "sizeof",
     "struct", "switch", "return",
@@ -40,10 +40,10 @@ imut char OPERATORS[][4] = {
     "<<", "=<<",
 };
 
-typedef struct char_array {
+typedef struct string_array {
     char ** arr;
     u64     len;
-} carr;
+} charr;
 
 #define carr_push(a, v) \
 (a.arr[a.len++] = v, \
@@ -128,6 +128,58 @@ typedef struct lexer_out {
     size_t  tknc;
 } lexout;
 
+// AST
+// ========================================
+// an Abstract Syntax Tree holds all tokens
+// in its place and information about their
+// function, according to the meaning given
+// to it and its position in the statement.
+// AST objects are ACDESV encoded, what is,
+// each node is either an Assigment, a func
+// Call, a namespace Definition (which also
+// may hold an assigment within it), a math
+// Expression, a Statement or a Variable or
+// literal Value.
+
+// layout: [ASSGN <XXXX> <YYYY> <ZZZZ>]
+// XXXX: assignment ip
+// YYYY: scope level
+// ZZZZ: namespaces defined
+char * new_assgn(u64 i, lexout * tkns);
+
+// layout: [FCALL <XXXX> <YYYY> <ZZZZ>]
+// XXXX: function name
+// YYYY: function args
+// ZZZZ: returned kind
+char * new_fcall(u64 i, lexout * tkns);
+
+// layout: [NSDEF <XXXX> <YYYY>]
+// XXXX: readability
+// YYYY: assignment/namespaces
+char * new_nsdef(u64 i, lexout * tkns);
+
+// layout: [EXPRS <XXXX> <YYYY> <ZZZZ>]
+// XXXX: lvalue
+// YYYY: operation
+// ZZZZ: rvalue
+char * new_exprs(u64 i, lexout * tkns);
+
+// layout: [STTMT <XXXX> <YYYY> <ZZZZ>]
+
+// when XXXX is a keyword:
+// YYYY: variable definition
+// ZZZZ: body
+
+// when XXXX is "BODY"
+// YYYY: AST node ip
+// ZZZZ: statement return kind
+char * new_sttmt(u64 i, lexout * tkns);
+
+// layout: [VALUE <XXXX> <YYYY>]
+// XXXX: token tree ip
+// YYYY: kind + "LITERAL"
+char * new_value(u64 i, lexout * tkns);
+
 #define tkn_push(arr, val) \
 (arr.tkns[arr.tknc++] = val, \
 arr.tkns = realloc(arr.tkns, (arr.tknc + 1) * sizeof(token)))
@@ -136,6 +188,8 @@ arr.tkns = realloc(arr.tkns, (arr.tknc + 1) * sizeof(token)))
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
 // lexer
 lexout lexit();
+// parser
+charr   parse();
 
 bool isnumc(char chr);
 bool ishexc(char chr);
@@ -155,4 +209,7 @@ void assert(bool check, imut char * msg);
 void cmperr(imut char * err, token * arw, token * cmpl);
 void wrning(imut char * wrn, token * arw, token * cmpl);
 
+#define BIC
 #include "bic.c"
+#include "lexer.c"
+#include "parser.c"
