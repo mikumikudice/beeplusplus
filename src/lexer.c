@@ -43,7 +43,7 @@ bool hassym(char * str){
 bool isscpd(char * str, u64 chr){
     if(chr < 0) return F;
 
-    if(str[chr - 1] == '\\'
+    if(str[chr - 1] == '*'
     and !isscpd(str, chr - 1)) return T;
     else return F;
 }
@@ -117,7 +117,6 @@ lexout lexit(){
         char ctkn[lsz];
 
         for(u64 c = 0; c < lsz; c++){
-            printf("%d %c %s\n", c, src[c], src);
             // enter multiline comment
             if(src[c] == '/' and src[(c + 1) % lsz] == '*' and !isstr){
                 clvl++;
