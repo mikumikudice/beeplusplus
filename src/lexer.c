@@ -99,10 +99,21 @@ lexout lexit(){
     out.tkns = malloc(sizeof(token));
     out.tknc = 0; // just to make sure
 
-    token cidx;     // index of the multiline comment start symbol
-    bool iscmt = F;// is the current sentence a comment?
+    bool iscmt = F; // is the current sentence a comment?
     bool isspl = F; // the comment in question is single-lined?
+    bool isscp = F; // is the current content within a scope?
+    bool ispar = F; // is the current content within parentheses?
+
     u64  clvl  = 0; // current comment nesting level
+    u64  slvl  = 0; // current scope level
+    u64  plvl  = 0; // current parentheses level
+    
+    // potential stack overflow?
+    u64  lcmt[csz * code.len][2]; // keep track of where the last comment were oppened
+    u64  lscp[csz * code.len][2]; // keep track of where the last scope were oppened
+    u64  lpar[csz * code.len][2]; // keep track of where the last parentheses were oppened
+
+    i64 last = -1;
 
     // current line
     for(u64 l = 0; l < code.len; l++){
@@ -119,12 +130,12 @@ lexout lexit(){
         for(u64 c = 0; c < lsz; c++){
             // enter multiline comment
             if(src[c] == '/' and src[(c + 1) % lsz] == '*' and !isstr){
-                clvl++;
                 // store index of the first comment symbol
                 if(!iscmt){
-                    cidx.coll = c;
-                    cidx.line = l;
+                    lcmt[clvl][0] = l;
+                    lcmt[clvl][0] = c;
                 }
+                clvl++;
                 iscmt = T;
                 c += 2;
                 if(c > lsz) continue;
@@ -154,7 +165,34 @@ lexout lexit(){
             }
             if(iscmt) continue;
 
-            // it's a token piece, just append
+            // when coming back to check symbol, skip it
+            if(last != c){
+                // take care of parenthesis and scopes
+                if(src[c] == '{' and !isstr){
+                    isscp = T;
+                    lscp[plvl][0] = l;
+                    lscp[plvl][1] = c;
+                    slvl++;
+                }
+                else if(src[c] == '}' and !isstr){
+                    slvl--;
+                    if(!slvl) isscp = F;
+                }
+
+                else if(src[c] == '(' and !isstr){
+                    ispar = T;
+                    lpar[plvl][0] = l;
+                    lpar[plvl][1] = c;
+                    plvl++;
+                }
+                else if(src[c] == ')' and !isstr){
+                    plvl--;
+                    if(!plvl) ispar = F;
+                }
+            }
+            last = c;
+
+            // it's a token letter, just append
             if(validn(src[c])) ctkn[ctp++] = src[c];
             // do something now
             else {
@@ -371,13 +409,40 @@ lexout lexit(){
     }
 
     if(iscmt){
-        token tmp = (token){nil, 0, code.len - 1,
-        strlen(code.arr[code.len - 1]) - 1};
-        
-        cidx.vall = malloc(24);
-        sprintf(cidx.vall, "previously started here");
-
-        cmperr(UNCCMMT, &tmp, &cidx); // TODO: invert after fix
+        token tmp = (token){
+            nil, 0, code.len - 1,
+            strlen(code.arr[code.len - 1]) - 1
+        };
+        token cmp = (token){
+            malloc(24), 0,
+            lcmt[clvl - 1][0], lcmt[clvl - 1][1]
+        };
+        strcpy(cmp.vall, "previously started here");
+        cmperr(UNCCMMT, &tmp, &cmp);
+    }
+    else if(isscp){
+        token tmp = (token){
+            nil, 0, code.len - 1,
+            strlen(code.arr[code.len - 1]) - 1
+        };
+        token cmp = (token){
+            malloc(24), 0,
+            lscp[slvl - 1][0], lscp[slvl - 1][1]
+        };
+        strcpy(cmp.vall, "previously started here");
+        cmperr(UNCBRCK, &tmp, &cmp);
+    }
+    else if(ispar){
+        token tmp = (token){
+            nil, 0, code.len - 1,
+            strlen(code.arr[code.len - 1]) - 1
+        };
+        token cmp = (token){
+            malloc(24), 0,
+            lpar[plvl - 1][0], lpar[plvl - 1][1]
+        };
+        strcpy(cmp.vall, "previously started here");
+        cmperr(UNCPARN, &tmp, &cmp);
     }
 
     return out;
