@@ -8,7 +8,7 @@ imut char KEYWORDS[][8] = {
     "for"  , "while", "goto" , "break",
     "getc" , "putc" , "print", "flush",
     "array", "value", "func" , "extrn",
-    "alloc", "free" , "nil"  ,
+    "alloc", "free" , "nil"  , "exit" ,
 
     "length", "kindof", "sizeof",
     "struct", "switch", "return",
@@ -51,23 +51,18 @@ a.arr = realloc(a.arr, (a.len + 1) * sizeof(char *)))
 
 typedef struct pattern {
     char * s, * e;
-    bool(*func)(char *);
 } ptrn;
-
-bool vld_args(char * path);
-bool vld_expr(char * path);
-bool vld_scop(char * path);
 
 // symbols
 imut ptrn SYMBOLS[] = {
-    (ptrn){.s = "(" , .e = ")" , .func = vld_args}, // call/exp
-    (ptrn){.s = "{" , .e = "}" , .func = vld_scop}, // scope
-    (ptrn){.s = "[" , .e = "]" , .func = vld_expr}, // indexing
-    (ptrn){.s = nil , .e = "." , .func = nil     }, // dots
-    (ptrn){.s = nil , .e = "," , .func = nil     }, // commas
-    (ptrn){.s = nil , .e = ";" , .func = nil     }, // newline
-    (ptrn){.s = nil , .e = "//", .func = nil     }, // comments
-    (ptrn){.s = "/*", .e = "*/", .func = nil     }, // ...
+    (ptrn){.s = "(" , .e = ")" }, // call/exp
+    (ptrn){.s = "{" , .e = "}" }, // scope
+    (ptrn){.s = "[" , .e = "]" }, // indexing
+    (ptrn){.s = nil , .e = "." }, // dots
+    (ptrn){.s = nil , .e = "," }, // commas
+    (ptrn){.s = nil , .e = ";" }, // newline
+    (ptrn){.s = nil , .e = "//"}, // comments
+    (ptrn){.s = "/*", .e = "*/"}, // ...
 };
 
 #define SYM_PAR 0 // parentheses
@@ -139,46 +134,77 @@ typedef struct lexer_out {
 // Call, a namespace Definition (which also
 // may hold an assigment within it), a math
 // Expression, a Statement or a Variable or
-// literal Value.
+// literal Value. The last item type is the
+// Body, which is an array of other types.
+
+// Formal Language codification types
+typedef enum ACDESV {
+    ASSGN, FCALL, NSDEF, EXPRS, STTMT, VALUE, SBODY
+} flct;
+
+// AST node [TYPE ARG1 ARG2 ARG3]
+typedef struct ast_object {
+    flct  type; // node type
+    u64 * arg1; // token ip intervals
+    u64 * arg2;
+    u64 * arg3;
+} node;
+
+// Abstract Syntax Tree
+typedef struct AST {
+    node * arr;
+    size_t len;
+} ast;
+
+// types that a AST node can be
+typedef enum flang_node_type {
+    TOKENT, KEYWRD, SYMBOL, TOKENL, FLANGT
+} nodet;
+
+// Formal Language Rule
+typedef struct flang_rule {
+    i16   vall;
+    nodet type;
+    bool  skippable;
+} rule;
 
 // layout: [ASSGN <XXXX> <YYYY> <ZZZZ>]
 // XXXX: assignment ip
 // YYYY: scope level
 // ZZZZ: namespaces defined
-char * new_assgn(u64 i, lexout * tkns);
+node new_assgn(u64 i, lexout * tkns);
 
 // layout: [FCALL <XXXX> <YYYY> <ZZZZ>]
 // XXXX: function name
 // YYYY: function args
 // ZZZZ: returned kind
-char * new_fcall(u64 i, lexout * tkns);
+node new_fcall(u64 i, lexout * tkns);
 
 // layout: [NSDEF <XXXX> <YYYY>]
 // XXXX: readability
 // YYYY: assignment/namespaces
-char * new_nsdef(u64 i, lexout * tkns);
+node new_nsdef(u64 i, lexout * tkns);
 
 // layout: [EXPRS <XXXX> <YYYY> <ZZZZ>]
 // XXXX: lvalue
 // YYYY: operation
 // ZZZZ: rvalue
-char * new_exprs(u64 i, lexout * tkns);
+node new_exprs(u64 i, lexout * tkns);
 
 // layout: [STTMT <XXXX> <YYYY> <ZZZZ>]
-
-// when XXXX is a keyword:
-// YYYY: variable definition
-// ZZZZ: body
-
-// when XXXX is "BODY"
-// YYYY: AST node ip
-// ZZZZ: statement return kind
-char * new_sttmt(u64 i, lexout * tkns);
+// * when XXXX is a keyword:
+//   YYYY: variable definition
+//   ZZZZ: body
+// ====================================
+// * when XXXX is "BODY"
+//   YYYY: AST node ip
+//   ZZZZ: statement return kind
+node new_sttmt(u64 i, lexout * tkns);
 
 // layout: [VALUE <XXXX> <YYYY>]
 // XXXX: token tree ip
-// YYYY: kind + "LITERAL"
-char * new_value(u64 i, lexout * tkns);
+// YYYY: node type
+node new_value(u64 i, lexout * tkns);
 
 #define tkn_push(arr, val) \
 (arr.tkns[arr.tknc++] = val, \
@@ -189,7 +215,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
 // lexer
 lexout lexit();
 // parser
-charr   parse();
+ast    parse();
 
 bool isnumc(char chr);
 bool ishexc(char chr);

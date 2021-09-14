@@ -4,7 +4,9 @@
 imut char * REALERR = "an unexpected error occurred";
 imut char * UNEXPCT = "unexpected symbol found here";
 imut char * UNCLSTR = "unclosed string found here";
-imut char * UNCCMMT = "unclosed multiline comment";
+imut char * UNCCMMT = "unclosed multiline comment found here";
+imut char * UNCBRCK = "unclosed bracket found here";
+imut char * UNCPARN = "unclosed parentheses found here";
 imut char * CALLERR = "attempt to call an undefined function";
 imut char * TOOFEWC = "too few arguments in the statement";
 imut char * TOOMUCH = "too much arguments in the statement";
@@ -14,6 +16,7 @@ imut char * KWRDIDX = "attempt to use a keyword as namespace";
 
 // array of source code lines
 charr code;
+u64 csz = LSIZE;
 
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     // compiling timer
@@ -27,7 +30,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
 
     char l = 0, o = 0;
     i64 cmtl = 0;
-    u64 i = 0, csz = LSIZE;
+    u64 i = 0;
 
     // get source
     bool isinc = F, isins = F, wait_err = F;
@@ -173,11 +176,10 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     puts("+parsing code  ...");
     COL(DEF);
 
-    for(u64 t = 0; t < tkns.tknc; t++){
-        printf("[%s] %ld %ld %d\n",
-        tkns.tkns[t].vall, tkns.tkns[t].line, tkns.tkns[t].coll, tkns.tkns[t].type);
+    ast _ast = parse(&tkns);
+
+    for(u64 t = 0; t < tkns.tknc; t++)
         free(tkns.tkns[t].vall);
-    }
     free(tkns.tkns);
 
     // compilation time
@@ -189,10 +191,6 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     printf("%.5fs\n", dt);
     COL(DEF);
 }
-
-bool vld_args(char * path){return T;}
-bool vld_expr(char * path){return T;}
-bool vld_scop(char * path){return T;}
 
 void assert(bool check, imut char * msg){
     if(check){
@@ -245,9 +243,15 @@ void cmperr(imut char * err, token * arw, token * cmpl){
         fprintf(stderr, DEF);
         fflush(stderr);
 
-        for(u16 i = 0; i < cmpl->coll + 4; i++){fprintf(stderr, " ");}
+        fprintf(stderr, RED);
+        for(u16 i = 0; i < cmpl->coll + 4; i++){
+            if(i > 3) fprintf(stderr, "~");
+            else fprintf(stderr, " ");
+        }
         fflush(stderr);
+
         fprintf(stderr, "^\n");
+        fprintf(stderr, DEF);
     }
     fprintf(stderr, "press any key to exit...");
     scanf("nothing");
