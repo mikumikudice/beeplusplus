@@ -2,7 +2,7 @@
 The good and old B, but better, smarter, easier and maybe faster. B++ is a compiled, almost pure functional, notyped, safe, tiny and lit programming language. _All hail B!_
 
 ## B++
-B++ is Influenced by B, C, Fortran, Rust, Pony and Haskell. The syntax from B/C, old school vibe and math philosofy from Fortran, safety from Rust and Pony and implementation of pure fuctional programming (or almost it) from Haskell.
+B++ is Influenced by B, C, Fortran, Rust, Pony and Haskell. The syntax from B/C, old school vibe, math philosofy and functional paradigm caracteristics from Fortran and Haskell, safety from Rust and Pony.
 
 ## What is B?
 [B](https://en.wikipedia.org/wiki/B_(programming_language)) is the father (or mother) of C. Things like treat arrays as pointers and use incrementation or decrementation on pointers came from B (actually from [BCPL](https://en.m.wikipedia.org/wiki/BCPL), but meeeh). It was a lang written by the good man, legendary, smart, greater, dear [Dennis Ritchie](https://en.wikipedia.org/wiki/Dennis_Ritchie) for the 36-bit mainframes (aka really lit old school computers).
@@ -72,10 +72,10 @@ Status: work in progress (33% completed)
 - [ ] Additional code documentation
 
 ## Principles of Design
-The design is simple. We must grant 4 things, the item above is more important than the below one and so on.
+It's my way to see and understand things - how I consider that a program should be written and ran.
 
 ### Readability
-Code must be understandable both for humans and computers. Nothing is more important than a well-writen code. Documentation is the pillar of all good programs, so keep it documented!
+Code must be understandable for both humans and computers. Nothing is more important than a well-writen code. Documentation is the pillar of all good programs, so keep it documented!
 
 ### Efficiency
 Efficiency is very important, either for the programmer or for the end user. Code must be easy to be implemented _and_ must be well optimized. Speed must be sacrificed in favor of readability. Do things fast is important, but understand what is going on is even more.

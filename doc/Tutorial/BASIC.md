@@ -20,33 +20,56 @@ auto foo = 5;
     */
 */
 ```
+### Variables
+Define with auto, assign with equals.
+```c
+auto foo, bar;
+foo = 66;
+bar = 'B';
+
+printf("%d*n", foo == bar); // prints 1
+```
+Notype means that everything is treated as a 32-bit integer value (no floats by default), but these values can be represented by literal numbers, char literals and addresses.
+
+You can use short assignment to variables like you do in Lua and Python:
+```c
+auto x, y, z = 1, 3, 5;
+printf("%d %d %d*n", z, y, x); // prints 5, 3, 1
+```
+C-like assigment works too
+```c
+auto x = 4, x = 5;
+```
 ### operators
 Arithimetic operators:
 ```c
+auto a, b, c, d, e;
 auto x = 1, y = 2, z = 4;
-y = x + x;
-y = z - y;
-x = z - (y + 1);
-z = y * y;
-x = y / y;
-y = y % z;
+a = x + y; // a = 3
+b = z - y; // b = 2
+c = y * y; // c = 4
+d = \ / y; // d = 2
+e = y % z; // e = 2
 ```
 Boolean operators:
 ```c
-auto a = 1, b = 1, c = 0;
-a = a and b;
-c = a && c; // same of and, just for compatibility
-b = a or c;
-a = b || c; // same of or
+auto a, b, c, d;
+auto x = 1, y = 1, z = 0;
+a = x and y; // a = 1
+b = x && z;  // "and" and "&&" are the same; b = 0
+c = y or z;  // c = 1
+a = z || z;  // both are the same; d = 0
 ```
 Bitwise operators
 ```c
-auto d, e, f;
-auto g, h, i = 0b101, 0xff0, 07007;
-c = h & i; // c = 3584 or 0b111000000000, 0xE00 or 7000
-d = g | i; // d = 3591 or 0b111000000111, 0xE07 or 7007
-e = g ^ h; // e = 4085 or 0b111111110101, 0xFF5 or 7765
-c =>> 9;   // c = 7    or 0b000000000111, 0x007 or 0007
+auto a, b, c, d, e, f;
+auto x, y, z = 0b101, 0xff0, 07007;
+a = ~z;     // a = 0b000111111000, 0x1F8 or 00770
+b = x & z;  // b = 0b000000000101, 0x005 or 00005
+c = x | y;  // c = 0b111111110101, 0xff5 or 07765
+d = y ^ z;  // d = 0b000111110111, 0x1f7 or 00767
+e = y >> x; // e = 0b000001111111, 0x07f or 00177
+f = x << x; // f = ob000010100000, 0x0A0 or 00240
 ```
 Assign operators
 ```c
@@ -75,27 +98,6 @@ l =|| n;    // l = 00070
 l++;        // l = 00071
 m--;        // m = 00001
 ```
-### Variables
-Define with auto, assign with equals.
-```c
-auto foo, bar;
-foo = 66;
-bar = 'B';
-
-printf("%d*n", foo == bar); // prints 1
-```
-Notype means that everything is treated as a 32-bit integer value (no floats by default), but these values can be represented by literal numbers, char literals and addresses.
-
-You can use short assignment to variables like you do in Lua and Python:
-```c
-auto x, y, z = 1, 3, 5;
-printf("%d %d %d*n", z, y, x); // prints 5, 3, 1
-```
-C-like assigment works too
-```c
-auto x = 4, x = 5;
-```
-
 ### I/O
 You have three main functions for I/O operations. These are:
 ```c
@@ -210,7 +212,7 @@ main(){
 ```
 In another file
 ```c
-// print.bi
+// puts.bi
 puts(str){
     for(auto c = 0; c < length(str); c++){
         putc(str[c]);
@@ -218,11 +220,11 @@ puts(str){
     putc('*n');
 };
 ```
-Then compile them with `bi main.bi print.bi`. Note that you can't define an function within another. Actually, no constant namespace can be defined in inner scopes (inner than the global scope);
+Then compile them with `bi main.bi puts.bi`. Note that you can't define an function within another. Actually, no constant namespace can be defined in inner scopes (inner than the global scope);
 
 ### Forced variable kind
-There is no type in B++, but there is _kinds_. Actually 4 kinds: value, array, struct and function. The compiler keep track of the kinds based on the first assignment. Once defined as an array, a namespace can not hold any other kind of data. The only kinds that can be switched are struct and arrays, because struct is a subkind of array. You can assign an array to a struct, but not vice-versa.
-Also, you can force a variable yo be of an expecific kind using tags, e.g.:
+There is no type in B++, but there are _kinds_. Actually 4 kinds: value, array, struct and function. The compiler keep track of the kinds based on the first assignment. Once defined as an array, a namespace can not hold any other kind of data. The only kinds that can be switched are struct and arrays, because struct is a subkind of array. You can assign a number to a numeric-kind variable, but not to an array one; you can assign an array to a struct, but not vice-versa.
+Also, you can force a variable to be of an expecific kind using tags, e.g.:
 ```c
 getmemsize([array]arr) return length(arr) * sizeof(arr[0]);
 
@@ -251,7 +253,7 @@ main(){
 The output:
 ```
 itm 2: 16
-[warning: "bar" was overflowed by 2] itm 3: 5
-[warning: "egg" was indexed (it's not an array)] itm 1: 8
+[warning: "bar" was overflowed by 2 at main.bi:08] itm 3: 5
+[warning: "egg" was indexed (it's not an array) at main.bi:09] itm 1: 8
 ```
 It's not meant to you use it in real applications, only for debugging.
