@@ -38,6 +38,8 @@ imut char OPERATORS[][4] = {
     "~" , "=~" ,
     ">>", "=>>",
     "<<", "=<<",
+    // label operator
+    ":"
 };
 
 typedef struct string_array {
@@ -60,7 +62,7 @@ imut ptrn SYMBOLS[] = {
     (ptrn){.s = "[" , .e = "]" }, // indexing
     (ptrn){.s = nil , .e = "." }, // dots
     (ptrn){.s = nil , .e = "," }, // commas
-    (ptrn){.s = nil , .e = ";" }, // newline
+    (ptrn){.s = nil , .e = ";" }, // semicolon
     (ptrn){.s = nil , .e = "//"}, // comments
     (ptrn){.s = "/*", .e = "*/"}, // ...
 };
@@ -70,7 +72,7 @@ imut ptrn SYMBOLS[] = {
 #define SYM_SQR 2 // square brackets
 #define SYM_DOT 3 // dots
 #define SYM_COM 4 // commas
-#define SYM_EOL 5 // end of line
+#define SYM_CLN 5 // semicolon
 #define SYM_CMM 6 // comment
 #define SYM_MLC 7 // multi-line comment
 
@@ -95,12 +97,12 @@ imut hash metachar[] = {
 };
 
 typedef enum token_type {
-    UNKNOWN ,
     KEYWORD ,
     INDEXER ,
     LITERAL ,
     LSYMBOL ,
     OPERATOR,
+    UNKNOWN ,
 } tknt;
 
 // token
@@ -108,10 +110,16 @@ typedef enum token_type {
 // a struct that holds a the string
 // literal, its syntax role and its
 // code positioning (line and coll)
+
+typedef union string_or_int {
+    char * str; // string for literals and indexes
+    u16    num; // number to keywords and operators (pointers)
+} aori;
+
 typedef struct token {
-    char * vall;
-    tknt   type;
-    size_t line, coll; // I know it's column but coll fits better
+    aori vall;
+    tknt type;
+    u64  line, coll; // I know it's column but coll fits better
 } token;
 
 // lexer output
@@ -129,17 +137,19 @@ typedef struct lexer_out {
 // in its place and information about their
 // function, according to the meaning given
 // to it and its position in the statement.
-// AST objects are ACDESV encoded, what is,
+// AST objects are ACDESV encoded, that is,
 // each node is either an Assigment, a func
-// Call, a namespace Definition (which also
-// may hold an assigment within it), a math
-// Expression, a Statement or a Variable or
-// literal Value. The last item type is the
-// Body, which is an array of other types.
+// Call or Constant definition, a namespace
+// Definition (which also hold an assigment
+// within it), a Expression, a Scope (group
+// of lines) or a Statement or a namespace, 
+// Variable or constant, or a literal Value
 
 // Formal Language codification types
 typedef enum ACDESV {
-    ASSGN, FCALL, NSDEF, EXPRS, STTMT, VALUE, SBODY
+    ASSGN, FCALL, NSDEF,
+    EXPRS, STTMT, VALUE,
+    SBODY, NONE
 } flct;
 
 // AST node [TYPE ARG1 ARG2 ARG3]
@@ -158,14 +168,18 @@ typedef struct AST {
 
 // types that a AST node can be
 typedef enum flang_node_type {
-    TOKENT, KEYWRD, SYMBOL, TOKENL, FLANGT
+    TOKENT, KEYWRD, SYMBOL, OPERTR, TOKENL, FLANGT
 } nodet;
 
 // Formal Language Rule
 typedef struct flang_rule {
     i16   vall;
     nodet type;
+    bool  isvarious; // it is various items?
     bool  skippable;
+
+    // at the end to avoid initializations
+    i64   cpos[2];
 } rule;
 
 // layout: [ASSGN <XXXX> <YYYY> <ZZZZ>]
@@ -225,6 +239,8 @@ bool matchs(char * str, bool(*func)(char));
 bool hassym(char * str);
 bool isscpd(char * str, u64 chr);
 i16  iskeyw(char * str);
+
+u64 upow(u64 b, u64 p);
 
 //char * hextostr(char * str);
 char * strtohex(char * str);

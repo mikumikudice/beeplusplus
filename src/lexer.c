@@ -56,6 +56,19 @@ i16 iskeyw(char * str){
     return -1;
 }
 
+// using rookieslab method
+u64 upow(u64 b, u64 p){
+    u64 out = 1;
+    while(p > 0){
+        if(p & 1){
+            out = (out * b);
+        }
+        b = (b * b);
+        p >>= 2;
+    }
+    return out;
+}
+
 char * strtohex(char * data){
     // avoid too many calls
     u16 len = arrlen(metachar);
@@ -104,9 +117,9 @@ lexout lexit(){
     bool isscp = F; // is the current content within a scope?
     bool ispar = F; // is the current content within parentheses?
 
-    u64  clvl  = 0; // current comment nesting level
-    u64  slvl  = 0; // current scope level
-    u64  plvl  = 0; // current parentheses level
+    i64  clvl  = 0; // current comment nesting level
+    i64  slvl  = 0; // current scope level
+    i64  plvl  = 0; // current parentheses level
     
     // potential stack overflow?
     u64  lcmt[csz * code.len][2]; // keep track of where the last comment were oppened
@@ -146,6 +159,10 @@ lexout lexit(){
             if(src[c] == '*' and src[(c + 1) % lsz] == '/' and !isstr){
                 clvl--;
                 if(!clvl) iscmt = F;
+                else if(clvl < 0){
+                    token this = {.line = l, .coll = c};
+                    cmperr(UNEXPCT, &this, nil);
+                }
 
                 c += 2; // skip to the char after the symbol
                 if(c >= lsz) continue;
@@ -177,6 +194,10 @@ lexout lexit(){
                 else if(src[c] == '}' and !isstr){
                     slvl--;
                     if(!slvl) isscp = F;
+                    else if(plvl < 0){
+                        token this = {.line = l, .coll = c};
+                        cmperr(UNEXPCT, &this, nil);
+                    }
                 }
 
                 else if(src[c] == '(' and !isstr){
@@ -188,6 +209,10 @@ lexout lexit(){
                 else if(src[c] == ')' and !isstr){
                     plvl--;
                     if(!plvl) ispar = F;
+                    else if(plvl < 0){
+                        token this = {.line = l, .coll = c};
+                        cmperr(UNEXPCT, &this, nil);
+                    }
                 }
             }
             last = c;
@@ -227,14 +252,14 @@ lexout lexit(){
                                 dummy = str_sub(dummy, 0, 4);
                                 free(temp);
                             }
-                            this.vall = strtohex(dummy);
+                            this.vall.str = strtohex(dummy);
                         // it's a string
                         } else {
                             // store the string literals at a
                             // table to be put in the head of
                             // the object file and in the tkn
                             // just store the pointer to it.
-                            this.vall = strtoptr(dummy);
+                            this.vall.str = strtoptr(dummy);
                         }
 
                         this.type = LITERAL;
@@ -258,41 +283,115 @@ lexout lexit(){
                     i16 idx = iskeyw(ctkn);
 
                     // keyword
-                    if(idx != -1)
+                    if(idx != -1){
                         this.type = KEYWORD;
-                    else {
-                        bool ish = F, isn = F, hashexdef;
+                        this.vall.num = idx;
+                    } else {
+                        bool ish = F, isb = F, iso = F, isn = F;
+                        bool hashexpr, hasbinpr, hasoctpr;
+                        u64 msd_h = 0, msd_b = 0, msd_o = 0;
                         u64 size = strlen(ctkn);
 
-                        hashexdef = startswith(ctkn, "0x");
+                        hashexpr = startswith(ctkn, "0x");
+                        hasbinpr = startswith(ctkn, "0b");
+                        hasoctpr = startswith(ctkn, "0");
 
                         // validate the literals
-                        if(hashexdef)
+
+                        // as hexadecimal
+                        if(hashexpr)
                         for(u16 chr = 2; chr < size; chr++){
                             ish = ishexc(ctkn[chr]);
+                            if(!ish) break;
+                            if(!msd_h and ctkn[chr] > '0')
+                            msd_h = chr;
                         }
+                        // as binary
+                        else if(hasbinpr)
+                        for(u16 chr = 2; chr < size; chr++){
+                            isb = ctkn[chr] == '0' or ctkn[chr] == '1';
+                            if(!isb) break;
+                            if(!msd_b and ctkn[chr] > '0')
+                            msd_b = chr;
+                        }
+                        // as octal
+                        else if(hasoctpr)
+                        for(u16 chr = 2; chr < size; chr++){
+                            iso = ctkn[chr] >= '0' or ctkn[chr] <= '7';
+                            if(!iso) break;
+                            if(!msd_o and ctkn[chr] > '0')
+                            msd_o = chr;
+                        }
+                        // as decimal
                         else
                         for(u16 chr = 0; chr < size; chr++){
                             isn = isnumc(ctkn[chr]);
+                            if(!isn) break;
                         }
 
-                        // hexadecimal literal
-                        if(hashexdef){
-                            if(ish)
-                            this.type = LITERAL;
+                        // hex literal
+                        if(hashexpr){
+                            if(ish){
+                                this.type = LITERAL;
+                                this.vall.str = malloc(strlen(ctkn) + 1);
+                                strcpy(this.vall.str, ctkn);
                             // invalid pattern
-                            else
+                            } else
+                                cmperr(UNEXPCT, &this, nil);
+                        }
+                        // bin literal
+                        else if(hasbinpr){
+                            if(isb){
+                                this.type = LITERAL;
+                                u64 val = 0,
+                                len = strlen(ctkn) - 2;
+                                for(u64 d = 0; d < len; d++){
+                                    val += upow(2, len - d - 1);
+                                }
+                                u64 tmp = upow(2, len - 1);
+                                u16 cnt = 0;
+                                while(tmp > 0) tmp /= 16, cnt++;
+                                this.vall.str = malloc(cnt + 1);
+
+                                // store all numeric values as hexadecimal
+                                sprintf(this.vall.str, "%lx", val);
+                            // invalid pattern
+                            } else
                             cmperr(UNEXPCT, &this, nil);
                         }
-                        // decimal literal
-                        else if(isn)
-                            this.type = LITERAL;
-                        // indexer
-                        else this.type = INDEXER;
-                    }
-                    this.vall = malloc(strlen(ctkn) + 1);
-                    strcpy(this.vall, ctkn);
+                        // oct literal
+                        else if(hasoctpr){
+                            if(iso){
+                                this.type = LITERAL;
+                                u64 len = upow(msd_h, 8);
+                                len *= src[msd_h] - 48;
+                                u64 tmp = len;
 
+                                u16 cnt = 0;
+                                while(tmp > 0) tmp /= 16, cnt++;
+
+                                u64 val;
+                                sscanf(ctkn, "%lo", &val);
+
+                                // store all numeric values as hexadecimal
+                                this.vall.str = malloc(cnt + 1);
+                                sprintf(this.vall.str, "%lx", val);
+                            // invalid pattern
+                            } else
+                            cmperr(UNEXPCT, &this, nil);
+                        } else {
+                            // decimal literal
+                            if(isn)
+                                this.type = LITERAL;
+                            // indexer
+                            else
+                                this.type = INDEXER;
+
+                            this.vall.str = malloc(strlen(ctkn) + 1);
+                            strcpy(this.vall.str, ctkn);
+                        }
+                    }
+                    out:
                     // resset the current token
                     // pointer to the beginning
                     ctp = 0;
@@ -304,9 +403,6 @@ lexout lexit(){
                 }
                 // symbol or operator
                 else if(src[c] != ' '){
-                    // just to make sure
-                    this.vall = nil;
-
                     u16 alen = arrlen(SYMBOLS);
                     // compare with the known symbols
                     for(u16 s = 0; s < alen; s++){
@@ -325,9 +421,7 @@ lexout lexit(){
                             t[len] = '\0';
 
                             if(!strcmp(SYMBOLS[s].s, t)){
-                                this.vall = malloc(len + 1);
-                                strcpy(this.vall, SYMBOLS[s].s);
-
+                                this.vall.num = s;
                                 this.type = LSYMBOL;
                                 c += len - 1;
                                 break;
@@ -343,9 +437,7 @@ lexout lexit(){
                         t[len] = '\0';
 
                         if(!strcmp(SYMBOLS[s].e, t)){
-                            this.vall = malloc(len + 1);
-                            strcpy(this.vall, SYMBOLS[s].e);
-
+                            this.vall.num = s;
                             this.type = LSYMBOL;
                             c += len - 1;
                             break;
@@ -374,12 +466,7 @@ lexout lexit(){
                         // =< being read as =, so keep it
                         // going until the end
                         if(!strcmp(OPERATORS[o], t)){
-                            // avoid memory leaks
-                            if(this.vall != nil) free(this.vall);
-
-                            this.vall = malloc(len + 1);
-                            strcpy(this.vall, OPERATORS[o]);
-
+                            this.vall.num = o;
                             this.type = OPERATOR;
                             mlen = len;
                         }
@@ -410,38 +497,44 @@ lexout lexit(){
 
     if(iscmt){
         token tmp = (token){
-            nil, 0, code.len - 1,
-            strlen(code.arr[code.len - 1]) - 1
+            .line = code.len - 1,
+            .coll = strlen(code.arr[code.len - 1]) - 1
         };
         token cmp = (token){
-            malloc(24), 0,
-            lcmt[clvl - 1][0], lcmt[clvl - 1][1]
+            .line = lcmt[clvl - 1][0],
+            .coll = lcmt[clvl - 1][1]
         };
-        strcpy(cmp.vall, "previously started here");
+        cmp.vall.str = malloc(24);
+
+        strcpy(cmp.vall.str, "previously started here");
         cmperr(UNCCMMT, &tmp, &cmp);
     }
     else if(isscp){
         token tmp = (token){
-            nil, 0, code.len - 1,
-            strlen(code.arr[code.len - 1]) - 1
+            .line = code.len - 1,
+            .coll = strlen(code.arr[code.len - 1]) - 1
         };
         token cmp = (token){
-            malloc(24), 0,
-            lscp[slvl - 1][0], lscp[slvl - 1][1]
+            .line = lscp[slvl - 1][0],
+            .coll = lscp[slvl - 1][1]
         };
-        strcpy(cmp.vall, "previously started here");
+        cmp.vall.str = malloc(24);
+
+        strcpy(cmp.vall.str, "previously started here");
         cmperr(UNCBRCK, &tmp, &cmp);
     }
     else if(ispar){
         token tmp = (token){
-            nil, 0, code.len - 1,
-            strlen(code.arr[code.len - 1]) - 1
+            .line = code.len - 1,
+            .coll = strlen(code.arr[code.len - 1]) - 1
         };
         token cmp = (token){
-            malloc(24), 0,
-            lpar[plvl - 1][0], lpar[plvl - 1][1]
+            .line = lpar[plvl - 1][0],
+            .coll = lpar[plvl - 1][1]
         };
-        strcpy(cmp.vall, "previously started here");
+        cmp.vall.str = malloc(24);
+
+        strcpy(cmp.vall.str, "previously started here");
         cmperr(UNCPARN, &tmp, &cmp);
     }
 

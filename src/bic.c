@@ -179,8 +179,11 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     ast _ast = parse(&tkns);
 
     for(u64 t = 0; t < tkns.tknc; t++)
-        free(tkns.tkns[t].vall);
+        if(tkns.tkns[t].type == INDEXER
+        or tkns.tkns[t].type == LITERAL) free(tkns.tkns[t].vall.str);
     free(tkns.tkns);
+
+    free(_ast.arr);
 
     // compilation time
     crnt = clock();
@@ -231,8 +234,8 @@ void cmperr(imut char * err, token * arw, token * cmpl){
         fprintf(stderr, DEF);
     }
     if(cmpl != nil){
-        fprintf(stderr, cmpl->vall);
-        free(cmpl->vall);
+        fprintf(stderr, cmpl->vall.str);
+        free(cmpl->vall.str);
 
         fprintf(stderr, " at %ld:%ld:\n",
         cmpl->line + 1, cmpl->coll + 1);
