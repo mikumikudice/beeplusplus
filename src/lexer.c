@@ -391,7 +391,6 @@ lexout lexit(){
                             strcpy(this.vall.str, ctkn);
                         }
                     }
-                    out:
                     // resset the current token
                     // pointer to the beginning
                     ctp = 0;
