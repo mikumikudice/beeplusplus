@@ -4,10 +4,11 @@
 
 // list of the reserved keywords
 imut char KEYWORDS[][8] = {
-    "if"   , "else" , "case" , "auto" ,
+    "if"   , "else" ,
     "for"  , "while", "goto" , "break",
     "getc" , "putc" , "print", "flush",
-    "array", "value", "func" , "extrn",
+    "array", "value", "func" , "enum" ,
+    "extrn", "auto" , "dist" ,
     "alloc", "free" , "nil"  , "exit" ,
 
     "length", "kindof", "sizeof",
@@ -131,105 +132,35 @@ typedef struct lexer_out {
     size_t  tknc;
 } lexout;
 
-// AST
-// ========================================
-// an Abstract Syntax Tree holds all tokens
-// in its place and information about their
-// function, according to the meaning given
-// to it and its position in the statement.
-// AST objects are ACDESV encoded, that is,
-// each node is either an Assigment, a func
-// Call or Constant definition, a namespace
-// Definition (which also hold an assigment
-// within it), a Expression, a Scope (group
-// of lines) or a Statement or a namespace, 
-// Variable or constant, or a literal Value
-
-// Formal Language codification types
-typedef enum ACDESV {
-    ASSGN, FCALL, NSDEF,
-    EXPRS, STTMT, VALUE,
-    SBODY, NONE
-} flct;
-
-// AST node [TYPE ARG1 ARG2 ARG3]
-typedef struct ast_object {
-    flct  type; // node type
-    u64 * arg1; // token ip intervals
-    u64 * arg2;
-    u64 * arg3;
-} node;
-
-// Abstract Syntax Tree
-typedef struct AST {
-    node * arr;
-    size_t len;
-} ast;
-
-// types that a AST node can be
-typedef enum flang_node_type {
-    TOKENT, KEYWRD, SYMBOL, OPERTR, TOKENL, FLANGT
-} nodet;
-
-// Formal Language Rule
-typedef struct flang_rule {
-    i16   vall;
-    nodet type;
-    bool  isvarious; // it is various items?
-    bool  skippable;
-
-    // at the end to avoid initializations
-    i64   cpos[2];
-} rule;
-
-// layout: [ASSGN <XXXX> <YYYY> <ZZZZ>]
-// XXXX: assignment ip
-// YYYY: scope level
-// ZZZZ: namespaces defined
-node new_assgn(u64 i, lexout * tkns);
-
-// layout: [FCALL <XXXX> <YYYY> <ZZZZ>]
-// XXXX: function name
-// YYYY: function args
-// ZZZZ: returned kind
-node new_fcall(u64 i, lexout * tkns);
-
-// layout: [NSDEF <XXXX> <YYYY>]
-// XXXX: readability
-// YYYY: assignment/namespaces
-node new_nsdef(u64 i, lexout * tkns);
-
-// layout: [EXPRS <XXXX> <YYYY> <ZZZZ>]
-// XXXX: lvalue
-// YYYY: operation
-// ZZZZ: rvalue
-node new_exprs(u64 i, lexout * tkns);
-
-// layout: [STTMT <XXXX> <YYYY> <ZZZZ>]
-// * when XXXX is a keyword:
-//   YYYY: variable definition
-//   ZZZZ: body
-// ====================================
-// * when XXXX is "BODY"
-//   YYYY: AST node ip
-//   ZZZZ: statement return kind
-node new_sttmt(u64 i, lexout * tkns);
-
-// layout: [VALUE <XXXX> <YYYY>]
-// XXXX: token tree ip
-// YYYY: node type
-node new_value(u64 i, lexout * tkns);
-
 #define tkn_push(arr, val) \
 (arr.tkns[arr.tknc++] = val, \
 arr.tkns = realloc(arr.tkns, (arr.tknc + 1) * sizeof(token)))
+
+imut char * nodes[] = {
+    "0:%.07x",
+    "1:%.07x",
+    "2:%.07x",
+    "2:%.07x",
+    "3:%.07x",
+};
+
+// Formal Language rules
+typedef enum ACDESV {
+    DEFINE, ASSIGN, // variable definition
+    CONSTD,         // constant definition
+    ARRDEF, 
+    UNIOND, STRUCT, // typedef rules
+    STTMNT, EXPRSS, // evaluatable bodies
+    LABELD, JMPSTT, // goto statements
+    
+} rule;
 
 // compiler
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
 // lexer
 lexout lexit();
 // parser
-ast    parse();
+charr parse(lexout * tkns);
 
 bool isnumc(char chr);
 bool ishexc(char chr);
