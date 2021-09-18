@@ -1,24 +1,36 @@
 #include <string.h>
 
-#ifndef _STDLIB_H
-    #include <stdlib.h>
-#endif
-
 #ifndef bcclib
     #include "bcclib.h"
 #endif
 
-size_t strarrlen(char ** arr, size_t len);
+#ifndef rustt
+    #include "rust.h"
+#endif
 
-ssize_t  strfnd(char * str, const char * pat);
-size_t  strfndc(char * str, const char * pat);              // count of finds
-ssize_t strfndl(char * str, const char * pat);              // last found
-ssize_t strafnd(char * str, const char * pat, ssize_t off); // offseted search
+#ifndef _STDIO_H
+    #include <stdio.h>
+#endif
 
-ssize_t str_arrfnd(char ** arr, const char * val, size_t len);
-ssize_t stk_strarrfnd(char ** arr, char * val);
+#ifndef _STDLIB_H
+    #include <stdlib.h>
+#endif
 
-char * str_sub(char * str, ssize_t i , ssize_t f);
+#ifndef _CTYPE_H
+    #include <ctype.h>
+#endif
+
+u64 strarrlen(char ** arr, u64 len);
+
+i64  strfnd(char * str, const char * pat);
+u64  strfndc(char * str, const char * pat);              // count of finds
+i64 strfndl(char * str, const char * pat);              // last found
+i64 strafnd(char * str, const char * pat, i64 off); // offseted search
+
+i64 str_arrfnd(char ** arr, const char * val, u64 len);
+i64 stk_strarrfnd(char ** arr, char * val);
+
+char * str_sub(char * str, i64 i , i64 f);
 char * strgsub(char * str, const char * pat, char * sup);
 char * strtrim(char * str);
 

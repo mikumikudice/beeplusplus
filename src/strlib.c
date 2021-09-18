@@ -1,30 +1,14 @@
-#ifndef rustt
-    #include "rust.h"
-#endif
+u64 strarrlen(char ** arr, u64 len){
 
-#ifndef _STDIO_H
-    #include <stdio.h>
-#endif
-
-#ifndef _STDLIB_H
-    #include <stdlib.h>
-#endif
-
-#ifndef _CTYPE_H
-    #include <ctype.h>
-#endif
-
-size_t strarrlen(char ** arr, u64 len){
-
-    size_t out = 0;
-    for(size_t i = 0; i < len; i++){out += sizeof(arr[i]);}
+    u64 out = 0;
+    for(u64 i = 0; i < len; i++){out += sizeof(arr[i]);}
     return out;
 }
 
-ssize_t strfnd(char * str, const char * pat){
+i64 strfnd(char * str, const char * pat){
     // avoid a lot of calls
-    size_t size = strlen(str);
-    size_t ptsz = strlen(pat);
+    u64 size = strlen(str);
+    u64 ptsz = strlen(pat);
 
     if(size == ptsz)
     if(!strcmp(str, pat)) return 0;
@@ -32,9 +16,9 @@ ssize_t strfnd(char * str, const char * pat){
     // offseted string
     char sub[ptsz + 1];
     // loop until the end
-    for(ssize_t o = 0; o + ptsz <= size; o++){
+    for(i64 o = 0; o + ptsz <= size; o++){
         // create substring
-        for(ssize_t c = o; c - o <= ptsz; c++){
+        for(i64 c = o; c - o <= ptsz; c++){
             // move substring's char to offset
             sub[c - o] = str[c];
         }
@@ -45,12 +29,12 @@ ssize_t strfnd(char * str, const char * pat){
 }
 
 // find last occurrence
-ssize_t strfndl(char * str, const char * pat){
+i64 strfndl(char * str, const char * pat){
     // avoid a lot of calls
-    size_t size = strlen(str);
-    size_t ptsz = strlen(pat);
+    u64 size = strlen(str);
+    u64 ptsz = strlen(pat);
 
-    ssize_t pos = -1;
+    i64 pos = -1;
 
     if(size == ptsz)
     if(!strcmp(str, pat)) return 0;
@@ -58,9 +42,9 @@ ssize_t strfndl(char * str, const char * pat){
     // offseted string
     char sub[ptsz + 1];
     // loop until the end
-    for(ssize_t o = 0; o + ptsz <= size; o++){
+    for(i64 o = 0; o + ptsz <= size; o++){
         // create substring
-        for(ssize_t c = o; c - o <= ptsz; c++){
+        for(i64 c = o; c - o <= ptsz; c++){
             // move substring's char to offset
             sub[c - o] = str[c];
         }
@@ -71,10 +55,10 @@ ssize_t strfndl(char * str, const char * pat){
 }
 
 // offseted search
-ssize_t strafnd(char * str, const char * pat, i64 off){
+i64 strafnd(char * str, const char * pat, i64 off){
     // avoid a lot of calls
-    size_t size = strlen(str);
-    size_t ptsz = strlen(pat);
+    u64 size = strlen(str);
+    u64 ptsz = strlen(pat);
 
     // check args
     if(off < 0) off = size + off;
@@ -92,9 +76,9 @@ ssize_t strafnd(char * str, const char * pat, i64 off){
     // offseted string
     char sub[ptsz + 1];
     // loop until the end
-    for(ssize_t o = off; o + ptsz <= size; o++){
+    for(i64 o = off; o + ptsz <= size; o++){
         // create substring
-        for(ssize_t c = o; c - o <= ptsz; c++){
+        for(i64 c = o; c - o <= ptsz; c++){
             // move substring's char to offset
             sub[c - o] = str[c];
         }
@@ -105,22 +89,22 @@ ssize_t strafnd(char * str, const char * pat, i64 off){
 }
 
 // count of matching cases
-size_t strfndc(char * str, const char * pat){
+u64 strfndc(char * str, const char * pat){
     // avoid a lot of calls
-    size_t size = strlen(str);
-    size_t ptsz = strlen(pat);
+    u64 size = strlen(str);
+    u64 ptsz = strlen(pat);
 
     if(size == ptsz)
     if(!strcmp(str, pat)) return 1;
     else return 0;
 
     // offseted string
-    ssize_t cnnt = 0;
+    i64 cnnt = 0;
     char sub[ptsz + 1];
     // loop until the end
-    for(ssize_t o = 0; o + ptsz <= size; o++){
+    for(i64 o = 0; o + ptsz <= size; o++){
         // create substring
-        for(ssize_t c = o; c - o <= ptsz; c++){
+        for(i64 c = o; c - o <= ptsz; c++){
             // move substring's char to offset
             sub[c - o] = str[c];
         }
@@ -130,7 +114,7 @@ size_t strfndc(char * str, const char * pat){
     return cnnt;
 }
 
-ssize_t str_arrfnd(char ** arr, const char * val, u64 len){
+i64 str_arrfnd(char ** arr, const char * val, u64 len){
     for(u16 i = 0; i < strarrlen(arr, len) / sizeof(arr); i++){
         // check every item in array
         if(!strcmp(arr[i], val)) return i;
@@ -139,9 +123,9 @@ ssize_t str_arrfnd(char ** arr, const char * val, u64 len){
 }
 
 // stack-allocated arrlen find
-ssize_t stk_strarrfnd(char ** arr, char * val){
+i64 stk_strarrfnd(char ** arr, char * val){
 
-    for(size_t i = 0; i < sizeof(arr); i++){
+    for(u64 i = 0; i < sizeof(arr); i++){
         // check every item in array
         if(!strcmp(arr[i], val)) return i;
     }
@@ -151,8 +135,9 @@ ssize_t stk_strarrfnd(char ** arr, char * val){
 // remember that str is freed after calling
 char * str_sub(char * str, i64 i, i64 f){
     // sugar indexes
-    if(i < 0) i = strlen(str) + i + 1;
-    if(f < 0) f = strlen(str) + f + 1;
+    u64 len = strlen(str);
+    if(i < 0) i = len + i + 1;
+    if(f < 0) f = len + f + 1;
 
     // invalid slices
     if(i < 0 or i > f){
@@ -177,7 +162,7 @@ char * str_sub(char * str, i64 i, i64 f){
     }
 
     char * out = malloc(f - i + 1);
-    for(size_t c = i; c <= f; c++){out[c - i] = str[c];}
+    for(u64 c = i; c <= f; c++){out[c - i] = str[c];}
 
     out[f - i] = '\0';
     return out;
@@ -197,9 +182,9 @@ char * strgsub(char * str, const char * pat, char * sup){
     malloc(strlen(str) + max(strlen(sup), 1) * strfndc(str, pat) + 1);
     strcpy(out, str);
 
-    size_t frst = strfnd(out, pat);
+    u64 frst = strfnd(out, pat);
     while(frst != -1){
-        size_t last;
+        u64 last;
         char * left, *rght;
         // split the string in what comes before
         // the pattern and what comes after it
@@ -223,11 +208,11 @@ char * strgsub(char * str, const char * pat, char * sup){
 }
 
 char * strtrim(char * str){
-    size_t len = strlen(str);
+    u64 len = strlen(str);
 
     bool started = F;
-    size_t stt = 0, end = 0;
-    for(size_t c = 0; c < len; c++){
+    u64 stt = 0, end = 0;
+    for(u64 c = 0; c < len; c++){
         if(!started and str[c] == ' ') stt++;
         else
         if(!started) started = T;
