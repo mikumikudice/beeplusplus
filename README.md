@@ -1,14 +1,14 @@
 # B++, bee++ or incremented B (bi)
-The good and old B, but better, smarter, easier and maybe faster. B++ is a compiled, almost pure functional, notyped, safe, tiny and lit programming language. _All hail B!_
+The good and old B, but better, smarter, easier and maybe faster. B++ is a compiled, kind of functional, notyped, safe, tiny and lit programming language. _All hail B!_
 
 ## B++
-B++ is Influenced by B, C, Fortran, Rust, Pony and Haskell. The syntax from B/C, old school vibe, math philosofy and functional paradigm caracteristics from Fortran and Haskell, safety from Rust and Pony.
+B++ is Influenced by B, C, Fortran, Rust, Pony and Haskell. The syntax from B/C, old school vibe, math philosofy and functional paradigm caracteristics from Fortran and Haskell and safety from Rust and Pony.
 
 ## What is B?
 [B](https://en.wikipedia.org/wiki/B_(programming_language)) is the father (or mother) of C. Things like treat arrays as pointers and use incrementation or decrementation on pointers came from B (actually from [BCPL](https://en.m.wikipedia.org/wiki/BCPL), but meeeh). It was a lang written by the good man, legendary, smart, greater, dear [Dennis Ritchie](https://en.wikipedia.org/wiki/Dennis_Ritchie) for the 36-bit mainframes (aka really lit old school computers).
 
 ## What's new?
-Glad you asked. Now we have structures (no more variables named with dots), implemented behind-the-scenes as a array which items have aliases.
+Glad you asked. Now we have structures (no more variables named with dots), implemented behind-the-scenes as arrays which items have aliases.
 ```c
 struct foo {
     x, y;
@@ -23,11 +23,11 @@ auto x, y, z = {2, 4, 8};
 printf("%d\n", x); // prints zero
 printf("%d\n", x / y); // prints zero
 printf("%d\n", z[5]); // prints 8, because 5 % length is 2
-printf("%d\n", z[4][2]); // prints 4, because z[4][2] == z[4 % length][2] == 4[2 % 1] == 4
+printf("%d\n", z[4][2]); // prints 4, because z[4][2] == z[4 % length][2] == 4[2] == 4
 ```
 Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to use `x =+ 4` to sum `4` to `x`, thing that C does better, using `x += 4` to express it. But in B++ this change only affects arithmetic binary operators, like sum, division, etc. What let us do things like `x =<= 4` (`x = (x <= 4)`). Awesome, right?
 
-Some life qualities from [leushenko's](https://github.com/Leushenko/ybc) version of B brings, such as short functions, no need to use `extrn` to just invoke functions, etc.
+Some life quality improvements that [leushenko's](https://github.com/Leushenko/ybc) version of B brings, such as short functions, no need to use `extrn` to just invoke functions, etc.
 ```c
 sum(x, y) x + y; // returns x + y
 
@@ -37,7 +37,7 @@ main(){
 ```
 Also single line multiple assignment, like:
 ```c
-auto x, y, z = 4, 5 6;
+auto x, y, z = 4, 5, 6;
 z, y, x = 5, 6, 7;
 ```
 And much more!
@@ -56,7 +56,7 @@ Status: work in progress (28.5% completed)
     - [ ] asm generation
     - [ ] assembling and linking
 ### DEVELOPMENT
-Status: work in progress (50% completed)
+Status: work in progress (60% completed)
 - [x] Basic syntax
     - [x] reserved keywords
     - [x] default formating
@@ -92,12 +92,9 @@ I'm an old soul trapped in a young body. I like floppy disks, the idea of a main
 <img src="advanced bee++ coding.gif">
 
 ## Building B++
-Requires (program for Linux only):
-* gcc (v >= 8)
-* stdio.h, stdlib.h, string.h, time.h, sys/time.h, unistd.h (probably all of it is already installed)
-
-Run `build.sh` for debugging (this mode adds address sanitizers and disable optimizations);<br/>
-Run `build_release.sh` for release compilation (optimized).
+Currently the B++ compiler only suports linux. To build from source you need only gcc >= 4.6.
+* Run `build.sh` for debugging (this mode adds address sanitizers and disable optimizations);
+* Run `build_release.sh` for release compilation (optimized).
 
 ## Learning B++
 Ok, so do you want to code your own little mess with B++? Cool. But first, what do you want to know?
