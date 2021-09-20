@@ -48,7 +48,7 @@ auto x = 1, y = 2, z = 4;
 a = x + y; // a = 3
 b = z - y; // b = 2
 c = y * y; // c = 4
-d = \ / y; // d = 2
+d = z / y; // d = 2
 e = y % z; // e = 2
 ```
 Boolean operators:
@@ -133,6 +133,15 @@ while auto c = getc(); c != 'y' and c != 'Y' {
     c = getc();
 };
 ```
+You also have `switch`es, that tries to match values and do something if it do so:
+```c
+switch auto x = 'hi'; x {                   // you can define variables within it too
+    'hey'  : print("yo!*n");        break;  // there is no `case`
+    'sup'  : print("what's up?*n"); break;
+    'hi'   : print("hello!*n");     break;
+    default: break;
+}
+```
 ### Functions and constants
 Anything out of a function (in the global scope) must be a constant value. That is, use the fallowing syntax:
 ```
@@ -143,7 +152,7 @@ Like
 buzz () putc('hi!*n');   // buzz: name | () ...: value
 fazz() {putc('bye*n');}; // valid too
 
-cmpl[2] "hello", "bye bye"; // no need to use semicolons outside
+cmpl[2] "hello", "bye bye";
 primes[5] {2, 3, 5, 7, 11}; // both are valid; with or without brackets
 ```
 You can ommit the `return` keyword if it's the last statlement.
@@ -160,8 +169,8 @@ Arrays are pointers to multiple addresses. The compiler and the compiled program
 auto arr[] = {2, 4, 6};
 
 putc(48 + arr[0]); // prints '2'
-putc(48 + arr[3]); // prints '6'
-putc(48 + arr[5]); // prints '4'; 5 % length == 2
+putc(48 + arr[1]); // prints '4'
+putc(48 + arr[5]); // prints '6'; 5 % length == 2
 ```
 Structures are like macros, they define a list of words that will later by replaced by indexes.
 ```c
@@ -180,6 +189,38 @@ auto modelx = car {alexa, "model x"};
 printf("%d*n", modelx.owner.age); // same of modelx[0][0]
 ```
 When indexing a not-array value, you'll always get the value itself. It works something like "get the n-th value of this literal array", but the array has only one value, that is the array itself.
+
+### Enums and distinct values
+You can define an compile-time keyword with a numeric value using enums. They will be treated as numbers in arithmetic expressions, but will not return true when compared with numeric values on boolean expressions, e.g.
+```c
+enum {              // no types, no typedef, no enum name
+    JAN, FEB, MAR,
+    APR, MAY, JUN,
+    JUL, AGO, SEP,
+    OCT, NOV, DEC
+};
+
+auto day, num, res = FEB, 2;      // res is not assigned
+
+if day == FEB print("true");      // prints true
+if day == num print("also true"); // doesn't print
+
+res = day * num;
+printf("%d*n", res); // prints 4
+```
+You can also define it in a shorter way, defining a value as _distinct_. Use the fallowing syntax to do so:
+```c
+null dist 0;
+
+auto ptr = null;
+if data = alloc(1, 4); data != 0 ptr = data;
+
+if ptr == null
+    print("an error happened while allocating memory");
+else
+    print("allocated 4 bytes successfully");
+```
+Actually alloc already does something like that. If the allocation fails, it returns nil, a built-in distinct 0. Noteworthy even both nil and null being distinct 0's, they aren't the same, so `null == nil` is false.
 
 ### High-order functions and call external code
 You can pass a function as parameter to another function with no problem, but first you have to declare it as a local value in the current context.
