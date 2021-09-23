@@ -5,7 +5,7 @@
 // list of the reserved keywords
 imut char KEYWORDS[][8] = {
     "if"   , "else" ,
-    "for"  , "while", "goto" , "break",
+    "for"  , "goto" , "break",
     "getc" , "putc" , "print", "flush",
     "array", "value", "func" , "enum" ,
     "extrn", "auto" , "dist" ,
@@ -15,6 +15,19 @@ imut char KEYWORDS[][8] = {
     "struct", "switch", "return",
     "default"
 };
+enum {
+    KW_IF   , KW_ELSE ,
+    KW_FOR  , KW_GOTO , KW_BREAK,
+    KW_GETC , KW_PUTC , KW_PRINT, KW_FLUSH,
+    KW_ARRAY, KW_VALUE, KW_FUNC , KW_ENUM ,
+    KW_EXTRN, KW_AUTO , KW_DIST ,
+    KW_ALLOC, KW_FREE , KW_NIL  , KW_EXIT ,
+
+    KW_LENGTH, KW_KINDOF, KW_SIZEOF,
+    KW_STRUCT, KW_SWITCH, KW_RETURN,
+    KW_DEFAULT
+};
+
 // list of operators
 imut char OPERATORS[][4] = {
     // equality operators
@@ -78,9 +91,9 @@ imut ptrn SYMBOLS[] = {
 #define SYM_MLC 7 // multi-line comment
 
 // hash table
-// =====================
-// a vector of key-value
-// system for reading it
+// ==========================
+// a vector with a key-value
+// system to read its content
 typedef struct hash_table {
     char * val;
     char * key;
@@ -93,17 +106,16 @@ imut hash metachar[] = {
     (hash){.key = "*n" , .val = "\n"},
     (hash){.key = "*t" , .val = "\t"},
     (hash){.key = "*r" , .val = "\r"},
+    (hash){.key = "*b" , .val = "\b"},
     (hash){.key = "*e" , .val = "\0"},
     (hash){.key = "**" , .val =  "*"},
 };
 
-typedef enum token_type {
-    KEYWORD ,
-    INDEXER ,
-    LITERAL ,
-    LSYMBOL ,
-    OPERATOR,
-    UNKNOWN ,
+typedef enum token_t {
+    KEYWORD, INDEXER ,
+    LITERAL,
+    LSYMBOL, OPERATOR,
+    UNKNOWN,
 } tknt;
 
 // token
@@ -136,24 +148,31 @@ typedef struct lexer_out {
 (arr.tkns[arr.tknc++] = val, \
 arr.tkns = realloc(arr.tkns, (arr.tknc + 1) * sizeof(token)))
 
-imut char * nodes[] = {
-    "0:%.07x",
-    "1:%.07x",
-    "2:%.07x",
-    "2:%.07x",
-    "3:%.07x",
-};
+// formal Language rules
+// =============================
+// Represents an evaluated node.
+// It starts at token_t::UNKNOWN
+// because the token after being
+// lexically analized will never
+// be of the UNKNOWN type, so we
+// can use this number again.
+typedef enum formal_lang_rule {
+    CONSTD = UNKNOWN, // constant definition
+    DEFINE,  ASSIGN , // variable definition
+    ARRDEF,  STTDEF , // objects  definition
+    ENUMDF,  STRUCT , // typedef rules
+    STTMNT,  EXPRSS , // evaluatable bodies
+    LABELD,  JMPSTT , // goto statements
+} rule_t;
 
-// Formal Language rules
-typedef enum ACDESV {
-    DEFINE, ASSIGN, // variable definition
-    CONSTD,         // constant definition
-    ARRDEF, 
-    UNIOND, STRUCT, // typedef rules
-    STTMNT, EXPRSS, // evaluatable bodies
-    LABELD, JMPSTT, // goto statements
-    
-} rule;
+typedef struct ast_node {
+    u16 type;  // either token type or rule type
+    u64 i_idx; // initial position or indexer
+    u64 f_idx; // final position or indexer
+
+    bool optn;
+    bool mult;
+} node;
 
 // compiler
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
@@ -170,6 +189,9 @@ bool matchs(char * str, bool(*func)(char));
 bool hassym(char * str);
 bool isscpd(char * str, u64 chr);
 i16  iskeyw(char * str);
+
+bool cmp_nodes(node * arr, node * othr, u64 i, u64 f);
+void flush_queue(node * q, u64 i, u64 f);
 
 u64 upow(u64 b, u64 p);
 
