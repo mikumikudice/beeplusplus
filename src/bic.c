@@ -87,7 +87,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
             // first realloc
             if(csz == LSIZE * 1.5){
                 assert(code.arr[code.len] == nil, UNEXPCT);
-                token arrw = {
+                tkn arrw = {
                     .line  = code.len,
                     .coll  = i,
                 };
@@ -105,7 +105,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
             code.arr[code.len][i] = '\0';
 
             if(wait_err){
-                token arrw = {
+                tkn arrw = {
                     .line  = code.len,
                     .coll  = wait_err - 1,
                 };
@@ -118,7 +118,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
                 and code.arr[code.len][1] != '/')
                 if(!hassym(code.arr[code.len])){
                     // default error arrow
-                    token arrw = {
+                    tkn arrw = {
                         .line  = code.len,
                         .coll  = strlen(code.arr[code.len]) - 1
                     };
@@ -132,7 +132,7 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
                         // the first up to the last quote
                         u64 lidx = strfndl(code.arr[code.len], metachar[s].val);
 
-                        token arrow = {
+                        tkn arrow = {
                             .line = code.len,
                             .coll = strlen(code.arr[code.len]) - 1
                         };
@@ -170,20 +170,25 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     puts("+lexing code   ...");
     COL(DEF);
 
-    lexout tkns = lexit();
+    tkn * tkns = lexit();
 
     COL(GRN);
     puts("+parsing code  ...");
     COL(DEF);
 
-    ast _ast = parse(&tkns);
+    //ast _ast = parse(&tkns);
 
-    for(u64 t = 0; t < tkns.tknc; t++)
-        if(tkns.tkns[t].type == INDEXER
-        or tkns.tkns[t].type == LITERAL) free(tkns.tkns[t].vall.str);
-    free(tkns.tkns);
+    tkn * tok, * old = nil;
+    for(tok = tkns; tok->next != &EOFT; tok = tok->next){        
+        // only free string values
+        if(tok->type == INDEXER
+        or tok->type == LITERAL)
+            free(tok->vall.str);
 
-    free(_ast.arr);
+        if(old) free(old);
+        old = tok;
+    }
+    free(old);
 
     // compilation time
     crnt = clock();
@@ -206,7 +211,7 @@ void assert(bool check, imut char * msg){
     }
 }
 
-void cmperr(imut char * err, token * arw, token * cmpl){
+void cmperr(imut char * err, tkn * arw, tkn * cmpl){
     // common prefix
     fprintf(stderr, RED);
     fprintf(stderr, "[ERROR]");
@@ -261,7 +266,7 @@ void cmperr(imut char * err, token * arw, token * cmpl){
     exit(-1);
 }
 
-void wrning(imut char * wrn, token * arw, token * cmpl){
+void wrning(imut char * wrn, tkn * arw, tkn * cmpl){
     COL(YEL);
     printf("[WARNING]");
     COL(DEF);

@@ -6,10 +6,8 @@
 imut char KEYWORDS[][8] = {
     "if"   , "else" ,
     "for"  , "goto" , "break",
-    "getc" , "putc" , "print", "flush",
     "array", "value", "func" , "enum" ,
-    "extrn", "auto" , "dist" ,
-    "alloc", "free" , "nil"  , "exit" ,
+    "extrn", "auto" , "dist" , "nil"  ,
 
     "length", "kindof", "sizeof",
     "struct", "switch", "return",
@@ -18,10 +16,8 @@ imut char KEYWORDS[][8] = {
 enum {
     KW_IF   , KW_ELSE ,
     KW_FOR  , KW_GOTO , KW_BREAK,
-    KW_GETC , KW_PUTC , KW_PRINT, KW_FLUSH,
     KW_ARRAY, KW_VALUE, KW_FUNC , KW_ENUM ,
-    KW_EXTRN, KW_AUTO , KW_DIST ,
-    KW_ALLOC, KW_FREE , KW_NIL  , KW_EXIT ,
+    KW_EXTRN, KW_AUTO , KW_DIST , KW_NIL  ,
 
     KW_LENGTH, KW_KINDOF, KW_SIZEOF,
     KW_STRUCT, KW_SWITCH, KW_RETURN,
@@ -80,15 +76,16 @@ imut ptrn SYMBOLS[] = {
     (ptrn){.s = nil , .e = "//"}, // comments
     (ptrn){.s = "/*", .e = "*/"}, // ...
 };
-
-#define SYM_PAR 0 // parentheses
-#define SYM_BRA 1 // brackets
-#define SYM_SQR 2 // square brackets
-#define SYM_DOT 3 // dots
-#define SYM_COM 4 // commas
-#define SYM_CLN 5 // semicolon
-#define SYM_CMM 6 // comment
-#define SYM_MLC 7 // multi-line comment
+enum {
+    SYM_PAR, // parentheses
+    SYM_BRA, // brackets
+    SYM_SQR, // square brackets
+    SYM_DOT, // dots
+    SYM_COM, // commas
+    SYM_CLN, // semicolon
+    SYM_CMM, // comment
+    SYM_MLC, // multi-line comment
+};
 
 // hash table
 // ==========================
@@ -129,24 +126,19 @@ typedef union string_or_int {
     u16    num; // number to keywords and operators (pointers)
 } aori;
 
-typedef struct token {
+typedef struct token tkn;
+struct token {
+    u32  apdx;
     aori vall;
     tknt type;
     u64  line, coll; // I know it's column but coll fits better
-} token;
 
-// lexer output
-// ==============================
-// a dynamic array containing all
-// the tokens spited by the lexer
-typedef struct lexer_out {
-    token * tkns;
-    size_t  tknc;
-} lexout;
+    // points to the next token
+    tkn *next;
+};
 
-#define tkn_push(arr, val) \
-(arr.tkns[arr.tknc++] = val, \
-arr.tkns = realloc(arr.tkns, (arr.tknc + 1) * sizeof(token)))
+// When tkn::next points to EOFT the token tree is over
+imut tkn EOFT = {};
 
 // formal Language rules
 // =============================
@@ -154,8 +146,8 @@ arr.tkns = realloc(arr.tkns, (arr.tknc + 1) * sizeof(token)))
 // It starts at token_t::UNKNOWN
 // because the token after being
 // lexically analized will never
-// be of the UNKNOWN type, so we
-// can use this number again.
+// be of the type NKNOWN, so we
+// can use this value again.
 typedef enum formal_lang_rule {
     CONSTD = UNKNOWN, // constant definition
     DEFINE,  ASSIGN , // variable definition
@@ -163,23 +155,16 @@ typedef enum formal_lang_rule {
     ENUMDF,  STRUCT , // typedef rules
     STTMNT,  EXPRSS , // evaluatable bodies
     LABELD,  JMPSTT , // goto statements
+    FUNDEF,  FNCALL ,
+    BODYDF,
 } rule_t;
-
-typedef struct ast_node {
-    u16 type;  // either token type or rule type
-    u64 i_idx; // initial position or indexer
-    u64 f_idx; // final position or indexer
-
-    bool optn;
-    bool mult;
-} node;
 
 // compiler
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
 // lexer
-lexout lexit();
+tkn * lexit();
 // parser
-charr parse(lexout * tkns);
+charr parse(tkn * tkns);
 
 bool isnumc(char chr);
 bool ishexc(char chr);
@@ -190,9 +175,6 @@ bool hassym(char * str);
 bool isscpd(char * str, u64 chr);
 i16  iskeyw(char * str);
 
-bool cmp_nodes(node * arr, node * othr, u64 i, u64 f);
-void flush_queue(node * q, u64 i, u64 f);
-
 u64 upow(u64 b, u64 p);
 
 //char * hextostr(char * str);
@@ -201,8 +183,8 @@ char * strtoptr(char * str);
 
 // compilation error
 void assert(bool check, imut char * msg);
-void cmperr(imut char * err, token * arw, token * cmpl);
-void wrning(imut char * wrn, token * arw, token * cmpl);
+void cmperr(imut char * err, tkn * arw, tkn * cmpl);
+void wrning(imut char * wrn, tkn * arw, tkn * cmpl);
 
 #define BIC
 #include "bic.c"

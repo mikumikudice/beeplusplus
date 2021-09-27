@@ -106,11 +106,10 @@ char * strtoptr(char * str){
     return sarr.arr[sarr.len - 1];
 }
 
-lexout lexit(){
+tkn * lexit(){
     // primitive ast output
-    lexout out;
-    out.tkns = malloc(sizeof(token));
-    out.tknc = 0; // just to make sure
+    tkn * out = malloc(sizeof(tkn));
+    tkn **tok = &out;
 
     bool iscmt = F; // is the current sentence a comment?
     bool isspl = F; // the comment in question is single-lined?
@@ -160,7 +159,7 @@ lexout lexit(){
                 clvl--;
                 if(!clvl) iscmt = F;
                 else if(clvl < 0){
-                    token this = {.line = l, .coll = c};
+                    tkn this = {.line = l, .coll = c};
                     cmperr(UNEXPCT, &this, nil);
                 }
 
@@ -195,7 +194,7 @@ lexout lexit(){
                     slvl--;
                     if(!slvl) isscp = F;
                     else if(plvl < 0){
-                        token this = {.line = l, .coll = c};
+                        tkn this = {.line = l, .coll = c};
                         cmperr(UNEXPCT, &this, nil);
                     }
                 }
@@ -210,7 +209,7 @@ lexout lexit(){
                     plvl--;
                     if(!plvl) ispar = F;
                     else if(plvl < 0){
-                        token this = {.line = l, .coll = c};
+                        tkn this = {.line = l, .coll = c};
                         cmperr(UNEXPCT, &this, nil);
                     }
                 }
@@ -221,8 +220,7 @@ lexout lexit(){
             if(validn(src[c])) ctkn[ctp++] = src[c];
             // do something now
             else {
-                token this;
-
+                tkn this;
                 this.type = UNKNOWN;
                 this.coll = col;
                 this.line = l;
@@ -345,11 +343,14 @@ lexout lexit(){
                                 this.type = LITERAL;
                                 u64 val = 0,
                                 len = strlen(ctkn) - 2;
+
                                 for(u64 d = 0; d < len; d++){
                                     val += upow(2, len - d - 1);
                                 }
+
                                 u64 tmp = upow(2, len - 1);
                                 u16 cnt = 0;
+
                                 while(tmp > 0) tmp /= 16, cnt++;
                                 this.vall.str = malloc(cnt + 1);
 
@@ -422,6 +423,8 @@ lexout lexit(){
                             if(!strcmp(SYMBOLS[s].s, t)){
                                 this.vall.num = s;
                                 this.type = LSYMBOL;
+                                this.apdx = 1;
+
                                 c += len - 1;
                                 break;
                             }
@@ -438,6 +441,8 @@ lexout lexit(){
                         if(!strcmp(SYMBOLS[s].e, t)){
                             this.vall.num = s;
                             this.type = LSYMBOL;
+                            this.apdx = 0;
+
                             c += len - 1;
                             break;
                         }
@@ -480,12 +485,22 @@ lexout lexit(){
                 if(this.type != UNKNOWN) col = c + 1;
                 else cmperr(UNEXPCT, &this, nil);
 
-                tkn_push(out, this);
-                if(!out.tkns) cmperr(REALERR, nil, nil);
+                // "out" points to the this' next token,
+                // the old out's next now points to this
+
+                // old_out.next = this | new_out = this.next
+
+                memcpy((*tok), &this, sizeof(tkn));
+                tok = &(*tok)->next;
+
+                if(
+                    !(l == code.len - 1 and col >= lsz)
+                // only alloc if it's not the last token
+                ) *tok = malloc(sizeof(tkn));
             }
         }
         if(isstr){
-            token arrw = {
+            tkn arrw = {
                 .line  = l,
                 .coll  = strlen(src) - 1
             };
@@ -495,11 +510,11 @@ lexout lexit(){
     }
 
     if(iscmt){
-        token tmp = (token){
+        tkn tmp = {
             .line = code.len - 1,
             .coll = strlen(code.arr[code.len - 1]) - 1
         };
-        token cmp = (token){
+        tkn cmp = {
             .line = lcmt[clvl - 1][0],
             .coll = lcmt[clvl - 1][1]
         };
@@ -509,11 +524,11 @@ lexout lexit(){
         cmperr(UNCCMMT, &tmp, &cmp);
     }
     else if(isscp){
-        token tmp = (token){
+        tkn tmp = {
             .line = code.len - 1,
             .coll = strlen(code.arr[code.len - 1]) - 1
         };
-        token cmp = (token){
+        tkn cmp = {
             .line = lscp[slvl - 1][0],
             .coll = lscp[slvl - 1][1]
         };
@@ -523,11 +538,11 @@ lexout lexit(){
         cmperr(UNCBRCK, &tmp, &cmp);
     }
     else if(ispar){
-        token tmp = (token){
+        tkn tmp = {
             .line = code.len - 1,
             .coll = strlen(code.arr[code.len - 1]) - 1
         };
-        token cmp = (token){
+        tkn cmp = {
             .line = lpar[plvl - 1][0],
             .coll = lpar[plvl - 1][1]
         };
@@ -537,5 +552,14 @@ lexout lexit(){
         cmperr(UNCPARN, &tmp, &cmp);
     }
 
+    if(*tok != nil)
+        (*tok)->next = &EOFT;
+    else
+        cmperr(
+        "a really unexpected error occured"\
+        ". please report [r101]", nil, nil);
+
+    // return out, that points to the first token,
+    // and not tok, that points to the last token
     return out;
 }
