@@ -181,13 +181,13 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     tkn * tok, * old = nil;
     for(tok = tkns; tok->next != &EOFT; tok = tok->next){        
         // only free string values
-        if(tok->type == INDEXER
-        or tok->type == LITERAL)
+        if(tok->type == INDEXER)
             free(tok->vall.str);
 
         if(old) free(old);
         old = tok;
     }
+    free_str();
     free(old);
 
     // compilation time

@@ -197,7 +197,8 @@ u64 upow(u64 b, u64 p);
 
 //char * hextostr(char * str);
 char * strtohex(char * str);
-char * strtoptr(char * str);
+u16    strtoptr(char * str);
+void   free_str();
 
 // compilation error
 void assert(bool check, imut char * msg);

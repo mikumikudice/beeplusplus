@@ -97,13 +97,26 @@ char * strtohex(char * data){
     return data;
 }
 
-char * strtoptr(char * str){
+// To avoid use a lot of memory for each string literal
+// store each occurence in a table and return the index
+// of it. Also helps in the code gen (put the values in
+// the .data segment of the asm file as constants
+u16 strtoptr(char * str){
+    // init array if its nil
     if(!sarr.arr) sarr.arr = malloc(sizeof(char *));
     for(u64 s = 0; s < sarr.len; s++){
-        if(!strcmp(str, sarr.arr[s])) return sarr.arr[s];
+        // return the known string value's index
+        if(!strcmp(str, sarr.arr[s])) return s;
     }
+    // push the new string
     carr_push(sarr, str);
-    return sarr.arr[sarr.len - 1];
+    return sarr.len - 1;
+}
+
+void free_str(){
+    for(u64 s = 0; s < sarr.len; s++){
+        free(sarr.arr[s]);
+    }
 }
 
 tkn * lexit(){
