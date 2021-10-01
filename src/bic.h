@@ -20,7 +20,6 @@ enum {
 
     KW_LENGTH, KW_KINDOF, KW_SIZEOF,
     KW_STRUCT, KW_SWITCH, KW_RETURN,
-    KW_DEFAULT
 };
 
 // list of operators
@@ -167,7 +166,6 @@ typedef struct ast_node {
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
 // lexer
 tkn * lexit();
-// parser
 
 node * constd_r(tkn * c, node * ctxt);
 node * define_r(tkn * c, node * ctxt);
@@ -183,6 +181,7 @@ node * jmpstt_r(tkn * c, node * ctxt);
 node * fundef_r(tkn * c, node * ctxt);
 node * fncall_r(tkn * c, node * ctxt);
 
+// parser
 charr parse(tkn * tkns);
 
 bool isnumc(char chr);
