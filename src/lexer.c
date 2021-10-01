@@ -270,7 +270,7 @@ tkn * lexit(){
                             // table to be put in the head of
                             // the object file and in the tkn
                             // just store the pointer to it.
-                            this.vall.str = strtoptr(dummy);
+                            this.vall.num = strtoptr(dummy);
                         }
 
                         this.type = LITERAL;
