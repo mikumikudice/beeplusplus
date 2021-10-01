@@ -5,6 +5,6 @@
 #define BLU "\033[0;34m"
 
 #define BOX_BLK "\033[0;40m"
-#define BOX_PNK "\033[0;41m"
+#define BOX_RED "\033[0;41m"
 
 #define COL(c) printf(c)

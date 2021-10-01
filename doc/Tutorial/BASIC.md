@@ -99,7 +99,7 @@ l++;        // l = 00071
 m--;        // m = 00001
 ```
 ### I/O
-You have three main functions for I/O operations. These are:
+You have four main functions for I/O operations. These are:
 ```c
 auto inp;
 
@@ -120,17 +120,16 @@ elif c == 'n' { // no parentheses is also valid
 };
 else print("invalid choice");
 ```
-For loops, you have the good and old for and while loops:
+For loops, you have the good and old for loop. `for` can be used to interact with ranges and can act as an infinite loop:
 ```c
 for auto i = 0; i < 4; i++ { // no parentheses is valid here too
     putc(48 + i);
 };
 putc('*n');
 
-printf("are you sure? (Y/n)")
-while auto c = getc(); c != 'y' and c != 'Y' {
-    printf("are you sure? (Y/n)");
-    c = getc();
+for auto t = 0; 1 {
+    printf("hello");
+    if t == 3 break;
 };
 ```
 You also have `switch`es, that tries to match values and do something if it do so:
@@ -261,7 +260,7 @@ puts(str){
     putc('*n');
 };
 ```
-Then compile them with `bi main.bi puts.bi`. Note that you can't define an function within another. Actually, no constant namespace can be defined in inner scopes (inner than the global scope);
+Then compile them with `bi main.bi puts.bi`.
 
 ### Forced variable kind
 There is no type in B++, but there are _kinds_. Actually 4 kinds: value, array, struct and function. The compiler keep track of the kinds based on the first assignment. Once defined as an array, a namespace can not hold any other kind of data. The only kinds that can be switched are struct and arrays, because struct is a subkind of array. You can assign a number to a numeric-kind variable, but not to an array one; you can assign an array to a struct, but not vice-versa.

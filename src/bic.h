@@ -146,7 +146,7 @@ imut tkn EOFT = {};
 // It starts at token_t::UNKNOWN
 // because the token after being
 // lexically analized will never
-// be of the type NKNOWN, so we
+// be of the type UNKNOWN, so we
 // can use this value again.
 typedef enum formal_lang_rule {
     CONSTD = UNKNOWN, // constant definition
@@ -155,15 +155,35 @@ typedef enum formal_lang_rule {
     ENUMDF,  STRUCT , // typedef rules
     STTMNT,  EXPRSS , // evaluatable bodies
     LABELD,  JMPSTT , // goto statements
-    FUNDEF,  FNCALL ,
-    BODYDF,
+    FUNDEF,  FNCALL , // functions
+    BODYDF,           // code scope definition
 } rule_t;
+
+typedef struct ast_node {
+    u16 * path; // code path represented as types (rule_t + token_t)
+    u16 rule_p; // rule pointer. Tells where the parsing is
+} node;
 
 // compiler
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
 // lexer
 tkn * lexit();
 // parser
+
+node * constd_r(tkn * c, node * ctxt);
+node * define_r(tkn * c, node * ctxt);
+node * assign_r(tkn * c, node * ctxt);
+node * arrdef_r(tkn * c, node * ctxt);
+node * sttdef_r(tkn * c, node * ctxt);
+node * enumdf_r(tkn * c, node * ctxt);
+node * struct_r(tkn * c, node * ctxt);
+node * sttmnt_r(tkn * c, node * ctxt);
+node * exprss_r(tkn * c, node * ctxt);
+node * labeld_r(tkn * c, node * ctxt);
+node * jmpstt_r(tkn * c, node * ctxt);
+node * fundef_r(tkn * c, node * ctxt);
+node * fncall_r(tkn * c, node * ctxt);
+
 charr parse(tkn * tkns);
 
 bool isnumc(char chr);
