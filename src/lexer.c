@@ -506,6 +506,9 @@ tkn * lexit(){
                 memcpy((*tok), &this, sizeof(tkn));
                 tok = &(*tok)->next;
 
+                // the first token holds the count of tokens
+                out->apdx++;
+
                 if(
                     !(l == code.len - 1 and col >= lsz)
                 // only alloc if it's not the last token
