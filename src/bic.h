@@ -11,7 +11,6 @@ imut char KEYWORDS[][8] = {
 
     "length", "kindof", "sizeof",
     "struct", "switch", "return",
-    "default"
 };
 enum {
     KW_IF   , KW_ELSE ,
