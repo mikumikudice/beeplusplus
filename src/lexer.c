@@ -274,6 +274,8 @@ tkn * lexit(){
                         }
 
                         this.type = LITERAL;
+                        this.apdx = STRING_L;
+
                         ctp = 0;
                         goto finish;
                     }
@@ -403,10 +405,18 @@ tkn * lexit(){
 
                             this.vall.str = malloc(strlen(ctkn) + 1);
                             strcpy(this.vall.str, ctkn);
+                            // store the number as int for further usage
+                            sscanf(this.vall.str, "0x%ld", &this.apdx);
+
+                            // avoid doing the same thing twise
+                            goto after;
                         }
-                        
+                        // store the number as int for further usage
+                        sscanf(this.vall.str, "0x%lx", &this.apdx);
+                        after:
+
                         // mark it as freeable
-                        this.apdx = T;
+                        this.apdx = FREEABLE;
                     }
                     // resset the current token
                     // pointer to the beginning

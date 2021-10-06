@@ -176,7 +176,10 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     puts("+parsing code  ...");
     COL(DEF);
 
-    //ast _ast = parse(&tkns);
+    // basic ast
+    astt bast = parse(tkns);
+
+    // TODO: final ast gen
 
     tkn * tok, * old = nil;
     for(tok = tkns; tok->next != &EOFT; tok = tok->next){        
@@ -184,11 +187,20 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
         if(tok->type == INDEXER)
             free(tok->vall.str);
 
+        // only free char literals
+        else if(tok->type == LITERAL and tok->apdx == FREEABLE)
+            free(tok->vall.str);
+
         if(old) free(old);
         old = tok;
     }
-    free_str();
     free(old);
+
+    // TODO: optimizations
+    // TODO: nasm gen
+
+    free(bast.ctxt);
+    free_str();
 
     // compilation time
     crnt = clock();
