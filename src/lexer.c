@@ -406,13 +406,13 @@ tkn * lexit(){
                             this.vall.str = malloc(strlen(ctkn) + 1);
                             strcpy(this.vall.str, ctkn);
                             // store the number as int for further usage
-                            sscanf(this.vall.str, "0x%ld", &this.apdx);
+                            sscanf(this.vall.str, "0x%ld", &this.data);
 
                             // avoid doing the same thing twise
                             goto after;
                         }
                         // store the number as int for further usage
-                        sscanf(this.vall.str, "0x%lx", &this.apdx);
+                        sscanf(this.vall.str, "0x%lx", &this.data);
                         after:
 
                         // mark it as freeable

@@ -129,12 +129,17 @@ typedef union string_or_int {
 typedef struct token tkn;
 struct token {
     u32  apdx;
+    u32  data;
     aori vall;
     tknt type;
     u64  line, coll; // I know it's column but coll fits better
 
     // points to the next token
     tkn *next;
+};
+// apndx data
+enum {
+    FREEABLE = 1, STRING_L
 };
 
 // when tkn::next points to EOFT the token tree
