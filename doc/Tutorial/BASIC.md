@@ -44,7 +44,7 @@ auto x = 4, x = 5;
 Arithimetic operators:
 ```c
 auto a, b, c, d, e;
-auto x = 1, y = 2, z = 4;
+auto x, y, z = 1, 2, 4;
 a = x + y; // a = 3
 b = z - y; // b = 2
 c = y * y; // c = 4
@@ -54,7 +54,7 @@ e = y % z; // e = 2
 Boolean operators:
 ```c
 auto a, b, c, d;
-auto x = 1, y = 1, z = 0;
+auto x, y, z = 1, 1, 0;
 a = x and y; // a = 1
 b = x && z;  // "and" and "&&" are the same; b = 0
 c = y or z;  // c = 1
@@ -277,7 +277,7 @@ main(){
 };
 ```
 Making dynamic assignment, when a variable sometimes is of a kind and sometimes of another kind, is allowed only when it doesn't envolve the function kind. Because both arrays and structures are treated in the same way, and treating a integer as well isn't problematic at all, because as said befoce, indexing a not-array value returns the value itself. Your code may not work as you expected, but your program wont crash.
-To help catch bugs related to it you enable the `--trackidx` flag, that will warn you when an variable is being indexed by a overflowed value or when this variable isn't an array or struct. The tracked indexing flag in action:
+To help catch bugs related to it you enable the `--debug=idxn` flag, that will warn you when an variable is being indexed by a overflowed value or when that variable isn't an array or struct. The index tracking flag in action:
 ```c
 print_nth_itm(arr, idx){
     printf("itm %d: %d\n", idx, arr[idx]);
