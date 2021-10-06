@@ -11,6 +11,7 @@ imut char KEYWORDS[][8] = {
 
     "length", "kindof", "sizeof",
     "struct", "switch", "return",
+    "default"
 };
 enum {
     KW_IF   , KW_ELSE ,
@@ -20,6 +21,7 @@ enum {
 
     KW_LENGTH, KW_KINDOF, KW_SIZEOF,
     KW_STRUCT, KW_SWITCH, KW_RETURN,
+    KWDEFAULT
 };
 
 // list of operators
@@ -85,10 +87,10 @@ enum {
     SYM_MLC, // multi-line comment
 };
 
-// hash table
-// ==========================
-// a vector with a key-value
-// system to read its content
+/* hash table                 *\
+*  ==========================  *
+*  is vector with a key-value  *
+\* system to read its content */
 typedef struct hash_table {
     char * val;
     char * key;
@@ -113,11 +115,11 @@ typedef enum token_t {
     UNKNOWN,
 } tknt;
 
-// token
-// ================================
-// a struct that holds a the string
-// literal, its syntax role and its
-// code positioning (line and coll)
+/* token                            *\
+*  ================================  *
+*  a struct that holds a the string  *
+*  literal, its syntax role and its  *
+\* code positioning (line and coll) */
 
 typedef union string_or_int {
     char * str; // string for literals and indexes
@@ -135,17 +137,18 @@ struct token {
     tkn *next;
 };
 
-// When tkn::next points to EOFT the token tree is over
-imut tkn EOFT = {};
+// when tkn::next points to EOFT the token tree
+// is over also EOFT holds the first token
+tkn EOFT = {};
 
-// formal Language rules
-// =============================
-// Represents an evaluated node.
-// It starts at token_t::UNKNOWN
-// because the token after being
-// lexically analized will never
-// be of the type UNKNOWN, so we
-// can use this value again.
+/* formal Language rules         *\
+*  =============================  *
+*  Represents an evaluated node.  *
+*  It starts at token_t::UNKNOWN  *
+*  because the token after being  *
+*  lexically analized will never  *
+*  be of the type UNKNOWN, so we  *
+\* can use this value again.     */
 typedef enum formal_lang_rule {
     CONSTD = UNKNOWN, // constant definition
     DEFINE,  ASSIGN , // variable definition
@@ -158,31 +161,49 @@ typedef enum formal_lang_rule {
 } rule_t;
 
 typedef struct ast_node {
-    u16 * path; // code path represented as types (rule_t + token_t)
-    u16 rule_p; // rule pointer. Tells where the parsing is
+    tkn * code;   // rule pointer. Tells where the parsing is
+    i16 * path;   // code path represented as types (rule_t + token_t)
+    i16   path_t; // the node type
 } node;
+
+typedef struct ast_t {
+    node * ctxt; // ast context
+    u64    clen; // context length
+} astt;
+
+#define grow_ast(ctxt) \
+ctxt->ctxt = realloc(ctxt->ctxt, ((ctxt->clen++) + 1) * sizeof(node))
 
 // compiler
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
 // lexer
 tkn * lexit();
 
-node * constd_r(tkn * c, node * ctxt);
-node * define_r(tkn * c, node * ctxt);
-node * assign_r(tkn * c, node * ctxt);
-node * arrdef_r(tkn * c, node * ctxt);
-node * sttdef_r(tkn * c, node * ctxt);
-node * enumdf_r(tkn * c, node * ctxt);
-node * struct_r(tkn * c, node * ctxt);
-node * sttmnt_r(tkn * c, node * ctxt);
-node * exprss_r(tkn * c, node * ctxt);
-node * labeld_r(tkn * c, node * ctxt);
-node * jmpstt_r(tkn * c, node * ctxt);
-node * fundef_r(tkn * c, node * ctxt);
-node * fncall_r(tkn * c, node * ctxt);
+tkn *constd_r(tkn * c, astt * ctxt);
+tkn *define_r(tkn * c, astt * ctxt);
+tkn *assign_r(tkn * c, astt * ctxt);
+
+tkn *sttdef_r(tkn * c, astt * ctxt);
+tkn *enumdf_r(tkn * c, astt * ctxt);
+tkn *struct_r(tkn * c, astt * ctxt);
+tkn *arrdef_r(tkn * c, astt * ctxt);
+
+tkn *sttmnt_r(tkn * c, astt * ctxt);
+tkn *exprss_r(tkn * c, astt * ctxt);
+
+tkn *fundef_r(tkn * c, astt * ctxt);
+tkn *fncall_r(tkn * c, astt * ctxt);
+
+tkn *labeld_r(tkn * c, astt * ctxt);
+tkn *jmpstt_r(tkn * c, astt * ctxt);
+
+tkn *bodydf_r(tkn * c, astt * ctxt);
+
+void pushnode(tkn * c, astt * ctxt);
+astt flushast(astt * ctxt, u64 i, u64 f);
 
 // parser
-charr parse(tkn * tkns);
+astt parse(tkn * tkns);
 
 bool isnumc(char chr);
 bool ishexc(char chr);
