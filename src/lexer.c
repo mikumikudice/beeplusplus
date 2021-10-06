@@ -404,6 +404,9 @@ tkn * lexit(){
                             this.vall.str = malloc(strlen(ctkn) + 1);
                             strcpy(this.vall.str, ctkn);
                         }
+                        
+                        // mark it as freeable
+                        this.apdx = T;
                     }
                     // resset the current token
                     // pointer to the beginning
@@ -568,6 +571,8 @@ tkn * lexit(){
         cmperr(UNCPARN, &tmp, &cmp);
     }
 
+    // EOFT holds the first token
+    EOFT.next = out;
     if(*tok != nil)
         (*tok)->next = &EOFT;
     else
