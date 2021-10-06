@@ -44,13 +44,14 @@ And much more!
 
 ## Progress in
 ### IMPLEMENTATION
-Status: work in progress (28.5% completed)
+Status: work in progress (25% completed)
 - [x] Load source
     - [x] loader
     - [x] lexer
 - [ ] Prossessing
-    - [ ] syntax analysis (check if everything is ok)
-    - [ ] parser (ast generation)
+    - [ ] syntax analysis (check semantics)
+    - [ ] parser (check if everything makes sense and gen final ast)
+    - [ ] subcompilations (require libs and extern files)
 - [ ] Codegen
     - [ ] optimizations
     - [ ] asm generation
