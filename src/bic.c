@@ -182,7 +182,8 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     // TODO: final ast gen
 
     tkn * tok, * old = nil;
-    for(tok = tkns; tok->next != &EOFT; tok = tok->next){        
+    u64   cnt = tkns->apdx;
+    for(tok = tkns; cnt > 0; tok = tok->next, cnt--){
         // only free string values
         if(tok->type == INDEXER)
             free(tok->vall.str);

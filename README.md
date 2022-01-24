@@ -1,31 +1,33 @@
-# B++, bee++ or incremented B (bi)
-The good and old B, but better, smarter, easier and maybe faster. B++ is a compiled, kind of functional, notyped, safe, tiny and lit programming language. _All hail B!_
+# B++ or bee++
+The good and old B, but better, smarter, easier and maybe faster. B++ is a compiled, kind of functional, half-notyped, low-level programming language.
+
+## Disclaimer
+B++ unfortunatelly is not retro-compatible with the old codes - at least not them all. You still are able to compile some examples, but most of them are not possible, both by the changes B++ does and by the fact the compiler is not targeted to the 36-bit mainframes. 
 
 ## B++
-B++ is Influenced by B, C, Fortran, Rust, Pony and Haskell. The syntax from B/C, old school vibe, math philosofy and functional paradigm caracteristics from Fortran and Haskell and safety from Rust and Pony.
+B++ is Influenced by B, C, Jai, Odin, Rust, Fortran, and Haskell. The syntax, simplicity and utility of B/C, the philosophy and design principles of Jai, Odin and Rust, and some paradigm ideas from Fortran and Haskell. At the end it's just a personal project that I hope someone will find interesting.
 
-## What is B?
-[B](https://en.wikipedia.org/wiki/B_(programming_language)) is the father (or mother) of C. Things like treat arrays as pointers and use incrementation or decrementation on pointers came from B (actually from [BCPL](https://en.m.wikipedia.org/wiki/BCPL), but meeeh). It was a lang written by the good man, legendary, smart, greater, dear [Dennis Ritchie](https://en.wikipedia.org/wiki/Dennis_Ritchie) for the 36-bit mainframes (aka really lit old school computers).
+## What was B?
+[B](https://en.wikipedia.org/wiki/B_(programming_language)) is the father (or mother) of C. Things like treat arrays as pointers and use incrementation or decrementation on pointers came from B (actually from [BCPL](https://en.m.wikipedia.org/wiki/BCPL), but meeeh). It was a lang written by the legendary, smart, greater, dear [Dennis Ritchie](https://en.wikipedia.org/wiki/Dennis_Ritchie) for the 36-bit mainframes (aka really lit old school computers).
 
 ## What's new?
-Glad you asked. Now we have structures (no more variables named with dots), implemented behind-the-scenes as arrays which items have aliases.
+Glad you asked. Now we have structures (no more variables named with dots), because now we have a (really weak) type system, and enums!
 ```c
 struct foo {
     x, y;
 };
-
 auto bar = foo{6, 7};
-putc(48 + bar.x); // equivalent to 48 + bar[0] | prints '6'
+printf("%d*n", 48 + bar.x); // prints '6'
+
+enum {
+    firsday , seconday ,
+    thirday , fourthday,
+    fifthday, sixthday
+};
+printf("today is %d*n", firsday)
 ```
-Some memory and runtime safety from Pony and Rust (see #Principles of design), like safe division, looped read from pointers, and 0-filled uninitialized data.
-```c
-auto x, y, z = {2, 4, 8};
-printf("%d\n", x); // prints zero
-printf("%d\n", x / y); // prints zero
-printf("%d\n", z[5]); // prints 8, because 5 % length is 2
-printf("%d\n", z[4][2]); // prints 4, because z[4][2] == z[4 % length][2] == 4[2] == 4
-```
-Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to use `x =+ 4` to sum `4` to `x`, thing that C does better, using `x += 4` to express it. But in B++ this change only affects arithmetic binary operators, like sum, division, etc. What let us do things like `x =<= 4` (`x = (x <= 4)`). Awesome, right?
+
+Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to type `x =+ 4` to sum `4` to `x`, thing that C fixed, using `x += 4` to express it. B++ also does it, after all, no one will try to compile an original B code from the 70's.
 
 Some life quality improvements that [leushenko's](https://github.com/Leushenko/ybc) version of B brings, such as short functions, no need to use `extrn` to just invoke functions, etc.
 ```c
@@ -59,13 +61,13 @@ Status: work in progress (25% completed)
 ### DEVELOPMENT
 Status: work in progress (60% completed)
 - [x] Basic syntax
-    - [x] reserved keywords
+    - [ ] reserved keywords
     - [x] default formating
 - [ ] Design
-    - [x] philosophy
+    - [x] philosophy (radically changed)
     - [ ] how to implement
-        - [ ] frontend (still deciding)
-        - [ ] backend
+        - [ ] frontend (still studying compilers)
+        - [x] backend (32-bit NASM)
 ### Documentation
 Status: work in progress (33% completed)
 - [ ] Tutorial
@@ -73,19 +75,26 @@ Status: work in progress (33% completed)
 - [ ] Additional code documentation
 
 ## Principles of Design
-It's my way to see and understand things - how I consider that a program should be written and ran.
+B++ is not meant to be a "big agenda language", but instead be a tool for me and my needs. *A problematic language for problematic people*. I don't want to be the new overcoming lang that will replace C, but a replacement of C for me. How **I** needed C to be. I usually type things wrong, forget to change things when copying-pasting and I really fell that I need some hard rules to work properly. B++ fits there. So these are the principles of design and the problems I have that they solve. These are the 3 rocks that over I build my church.
 
-### Readability
-Code must be understandable for both humans and computers. Nothing is more important than a well-writen code. Documentation is the pillar of all good programs, so keep it documented!
+### 1: Readability, consistency and simplicity
+Code must be understandable for both humans and computers. And code must be simple as possible - No things like the GNU libc or the Kernel Linux that have thousands of macros that sounds like deep black magic - and easy to read and understand. The language also need to be concise and minimalistic to keep things easy to learn and inplement. Also, easy to keep documented, because documentation is the pillar of all good programs. That implies in:
+    * few keywords in the language.<br/>
+    * simple and concise semantics and grammar.<br/>
+    * no pre-compilation macros or ambiguous desugar code.<br/>
+    * no "1 problem, multiple solutions" approach, but instead "thousands of problems, one solution".<br/>
 
-### Efficiency
-Efficiency is very important, either for the programmer or for the end user. Code must be easy to be implemented _and_ must be well optimized. Speed must be sacrificed in favor of readability. Do things fast is important, but understand what is going on is even more.
+### 2: Safe when testing, fast when running
+I want a program that instead of crash and obligate me to debug hours and hours, just to figure out that an array was being read out of bounds, awarns me about where, when and how an invalid read/write happened. But also, when everything is cleaned up and well optimized, I want to make a unsafe-checked program that runs as fast as possible. That inplies in:
+    * typesafe and fixed and simple ruleset for all types during compile-time.<br/>
+    * memory safe during run-time in debug mode.<br/>
+    * massive optimization while producing understandable ASM code in release mode.<br/>
 
-### Safety
-Code must be safe. Memory safe, type safe and BIOS proof ("Besta Ignorante Operando o Sistema", or "Ignorant Beast Operating the System", in english). The code must be capable of handling common and expectable problems, such as invalid input, low memory avaliable, etc, and the programmer must be able to avoid invalid memory addresses, invalid read / write and mostly undefined behaviour. Safety is important, but if we need to do dangerous things at least do it efficiently.
-
-### Simplicity
-And finally, code must be simple to understand and to read. Clean, short and simple code. Things can get more complicated if we need to to keep things safe.
+### 3: Reliable and lightweight
+Also, the code must be eficient and well developed by the user, to then be well optimized and implemented by the compiler. Both user and program should be reliable for each other. That implies in:
+    * total control over optimizations.<br/>
+    * compiler complaining about ambiguous or expensive algorithms.<br/>
+    * simple yet complete error messages about errors in compile and run-times.<br/>
 
 ## Why B?
 I'm an old soul trapped in a young body. I like floppy disks, the idea of a mainframe and old languages (such as Fortran and B). And I like the idea of the roots of C. From where we came from. Also, it's a cannonic language in one of my favorite cartoons.
@@ -96,6 +105,9 @@ I'm an old soul trapped in a young body. I like floppy disks, the idea of a main
 Currently the B++ compiler only suports linux. To build from source you need only gcc >= 4.6.
 * Run `build.sh` for debugging (this mode adds address sanitizers and disable optimizations);
 * Run `build_release.sh` for release compilation (optimized).
+
+## Special thanks
+Thanks [Ginger Bill](https://twitter.com/TheGingerBill) and [Jonathan Blow](https://twitter.com/Jonathan_Blow) for being my programming-language designer heroes, and [rui314](https://github.com/rui314) for making a good compiler building tutorial, the [chibicc](https://github.com/rui314/chibicc).
 
 ## Learning B++
 Ok, so do you want to code your own little mess with B++? Cool. But first, what do you want to know?

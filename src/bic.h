@@ -4,52 +4,52 @@
 
 // list of the reserved keywords
 imut char KEYWORDS[][8] = {
-    "if"   , "else" ,
+    "if"   , "elif" , "else" ,
     "for"  , "goto" , "break",
-    "array", "value", "func" , "enum" ,
-    "extrn", "auto" , "dist" , "nil"  ,
+    "extrn", "auto" , "char" , "pntr",
+    "dist" ,
 
-    "length", "kindof", "sizeof",
+    "length", "typeof", "sizeof",
     "struct", "switch", "return",
-    "default"
 };
 enum {
-    KW_IF   , KW_ELSE ,
+    KW_IF   , KW_ELIF , KW_ELSE ,
     KW_FOR  , KW_GOTO , KW_BREAK,
-    KW_ARRAY, KW_VALUE, KW_FUNC , KW_ENUM ,
-    KW_EXTRN, KW_AUTO , KW_DIST , KW_NIL  ,
+    KW_EXTRN, KW_AUTO , KW_CHAR , KW_PNTR,
+    KW_DIST ,
 
     KW_LENGTH, KW_KINDOF, KW_SIZEOF,
     KW_STRUCT, KW_SWITCH, KW_RETURN,
-    KWDEFAULT
 };
 
 // list of operators
 imut char OPERATORS[][4] = {
-    // equality operators
-    "=" , "==" , "===",
-    "!" , "!=" , "=!=",
-    "<" , "=<" ,
-    "<=", "=<=",
-    ">" , "=>" ,
-    ">=", "=>=",
+    // equality and assignment operators
+    "="  , "==" ,
+    "!"  , "!=" ,
+    "<"  , "<=" ,
+    ">"  , ">=" ,
+
     // arithmetic operators
-    "+" , "++" , "+=",
-    "-" , "--" , "-=",
-    "*" , "*=" ,
-    "/" , "/=" ,
-    "%" , "%=" ,
+    "+"  , "+=" ,
+    "-"  , "-=" ,
+    "*"  , "*=" ,
+    "/"  , "/=" ,
+    "%"  , "%=" ,
+
     // boolean operators
-    "and", "or",
-    "|" , "||" , "=|" , "=||",
-    "&" , "&&" , "=&" , "=&&",
+    "not", "and", "or",
+
     // bitwise operators
-    "^" , "=^" ,
-    "~" , "=~" ,
-    ">>", "=>>",
-    "<<", "=<<",
-    // label operator
-    ":"
+    "~"  , "~=" , // not / xor
+    "|"  , "|=" , // or
+    "&"  , "&=" , // and / adr
+    ">>" , ">>=", // left shift
+    "<<" , "<<=", // right shift
+
+    // miscellaneous
+    "^"  ,        // pointer operator
+    ":"           // label operator
 };
 
 typedef struct string_array {
@@ -70,8 +70,8 @@ imut ptrn SYMBOLS[] = {
     (ptrn){.s = "(" , .e = ")" }, // call/exp
     (ptrn){.s = "{" , .e = "}" }, // scope
     (ptrn){.s = "[" , .e = "]" }, // indexing
-    (ptrn){.s = nil , .e = "." }, // dots
-    (ptrn){.s = nil , .e = "," }, // commas
+    (ptrn){.s = nil , .e = "." }, // dot
+    (ptrn){.s = nil , .e = "," }, // comma
     (ptrn){.s = nil , .e = ";" }, // semicolon
     (ptrn){.s = nil , .e = "//"}, // comments
     (ptrn){.s = "/*", .e = "*/"}, // ...
@@ -133,18 +133,16 @@ struct token {
     aori vall;
     tknt type;
     u64  line, coll; // I know it's column but coll fits better
-
-    // points to the next token
-    tkn *next;
+    tkn *next,*last;
 };
 // apndx data
 enum {
     FREEABLE = 1, STRING_L
 };
 
-// when tkn::next points to EOFT the token tree
-// is over also EOFT holds the first token
-tkn EOFT = {};
+// when tkn::next points to EOTT the token tree
+// is over. EOTT also holds the first token
+tkn EOTT = {};
 
 /* formal Language rules         *\
 *  =============================  *
@@ -177,13 +175,14 @@ typedef struct ast_t {
 } astt;
 
 #define grow_ast(ctxt) \
-ctxt->ctxt = realloc(ctxt->ctxt, ((ctxt->clen++) + 1) * sizeof(node))
+ctxt.ctxt = realloc(ctxt.ctxt, ((ctxt.clen++) + 1) * sizeof(node))
 
 // compiler
 void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
 // lexer
 tkn * lexit();
 
+// parser rules
 tkn *constd_r(tkn * c, astt * ctxt);
 tkn *define_r(tkn * c, astt * ctxt);
 tkn *assign_r(tkn * c, astt * ctxt);
@@ -204,7 +203,6 @@ tkn *jmpstt_r(tkn * c, astt * ctxt);
 
 tkn *bodydf_r(tkn * c, astt * ctxt);
 
-void pushnode(tkn * c, astt * ctxt);
 astt flushast(astt * ctxt, u64 i, u64 f);
 
 // parser

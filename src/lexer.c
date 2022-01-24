@@ -92,7 +92,7 @@ char * strtohex(char * data){
         sprintf(data, "%s%.2x", othr, temp[c]);
     }
     // keep length constant
-    while(strlen(data) < 10) data = strpush(data, "0");
+    while(strlen(data) < 10) data = strpush(data, "00");
 
     return data;
 }
@@ -122,21 +122,21 @@ void free_str(){
 tkn * lexit(){
     // primitive ast output
     tkn * out = malloc(sizeof(tkn));
-    tkn **tok = &out;
+    out->apdx = 0;    // the count of tokens
+    tkn **tok = &out; // the current token
 
-    bool iscmt = F; // is the current sentence a comment?
-    bool isspl = F; // the comment in question is single-lined?
-    bool isscp = F; // is the current content within a scope?
-    bool ispar = F; // is the current content within parentheses?
+    bool iscmt = F;   // is the current sentence a comment?
+    bool isspl = F;   // the comment in question is single-lined?
+    bool isscp = F;   // is the current content within a scope?
+    bool ispar = F;   // is the current content within parentheses?
 
-    i64  clvl  = 0; // current comment nesting level
-    i64  slvl  = 0; // current scope level
-    i64  plvl  = 0; // current parentheses level
-    
-    // potential stack overflow?
-    u64  lcmt[csz * code.len][2]; // keep track of where the last comment were oppened
-    u64  lscp[csz * code.len][2]; // keep track of where the last scope were oppened
-    u64  lpar[csz * code.len][2]; // keep track of where the last parentheses were oppened
+    i64  clvl  = 0;   // current comment nesting level
+    i64  slvl  = 0;   // current scope level
+    i64  plvl  = 0;   // current parentheses level
+
+    u64 lcmt[csz * code.len][2]; // keep track of where the last comment were oppened
+    u64 lscp[csz * code.len][2]; // keep track of where the last scope were oppened
+    u64 lpar[csz * code.len][2]; // keep track of where the last parentheses were oppened
 
     i64 last = -1;
 
@@ -247,6 +247,8 @@ tkn * lexit(){
                     if(!issc) isstr = !isstr;
 
                     if(!isstr){
+                        this.type = LITERAL;
+
                         char * dummy = malloc(strlen(ctkn) + 1);
                         strcpy(dummy, ctkn);
 
@@ -264,6 +266,7 @@ tkn * lexit(){
                                 free(temp);
                             }
                             this.vall.str = strtohex(dummy);
+                            this.apdx = FREEABLE;
                         // it's a string
                         } else {
                             // store the string literals at a
@@ -271,11 +274,8 @@ tkn * lexit(){
                             // the object file and in the tkn
                             // just store the pointer to it.
                             this.vall.num = strtoptr(dummy);
+                            this.apdx = STRING_L;
                         }
-
-                        this.type = LITERAL;
-                        this.apdx = STRING_L;
-
                         ctp = 0;
                         goto finish;
                     }
@@ -516,16 +516,26 @@ tkn * lexit(){
 
                 // old_out.next = this | new_out = this.next
 
-                memcpy((*tok), &this, sizeof(tkn));
-                tok = &(*tok)->next;
+                // store the previous token on the current
+                this.last = (*tok);
+                if(!(l == code.len and c == lsz)){
+                    // once the token is already on the chain,
+                    // move to the current's next token
+                    (*tok)->next = malloc(sizeof(tkn));
+                    memcpy((*tok)->next, &this, sizeof(tkn));
+                    // the next token is the next of the current, so update tok
+                    tok = &(*tok)->next;
 
-                // the first token holds the count of tokens
-                out->apdx++;
-
-                if(
-                    !(l == code.len - 1 and col >= lsz)
-                // only alloc if it's not the last token
-                ) *tok = malloc(sizeof(tkn));
+                    // the first token holds the count of tokens
+                    out->apdx++;
+                // end of tree
+                } else {
+                    // EOTT holds the first token and the first token
+                    // holds EOTT, so this chain is circular
+                    this.next = &EOTT;
+                    EOTT.next = out;
+                    out->last = &EOTT;
+                }
             }
         }
         if(isstr){
@@ -580,15 +590,6 @@ tkn * lexit(){
         strcpy(cmp.vall.str, "previously started here");
         cmperr(UNCPARN, &tmp, &cmp);
     }
-
-    // EOFT holds the first token
-    EOFT.next = out;
-    if(*tok != nil)
-        (*tok)->next = &EOFT;
-    else
-        cmperr(
-        "a really unexpected error occured"\
-        ". please report [r101]", nil, nil);
 
     // return out, that points to the first token,
     // and not tok, that points to the last token

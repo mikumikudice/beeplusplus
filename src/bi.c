@@ -2,7 +2,7 @@
 #include  "bic.h"
 
 #define CVER "0.0.1"
-#define DATE "2021"
+#define DATE "2021-2022"
 
 #include <unistd.h>
 
@@ -14,16 +14,13 @@ int main(i32 argc, char ** args){
     if(argc == 1){
         printf("B++ (incremented B) Compiler v%s - %s "\
         "copyright(c) Mateus M. D. Souza\n", CVER, DATE);
-        puts("USAGE:\n\n bi <comp args> <debug flags> [filename]");
+        puts("USAGE:\n\n bi <comp args> [filename]");
 
         puts("\ncomp args:\n");
         puts("-o : build name; sets the output file name");
         puts("-r : release build; generates optimized artifacts");
-        puts("-d : debug build; generates unoptimized artifacts");
-        puts("-s : target file is striped to be shorter");
+        puts("-d : debug build (default); generates unoptimized artifacts");
         puts("-S : generates an asm file not assembled");
-        puts("\ndebug flags:");
-        puts("--trackidx : prints a suffix warning when an indexing overflow happen");
 
         return 0;
     } else {
