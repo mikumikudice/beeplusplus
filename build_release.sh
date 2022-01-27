@@ -1,2 +1,3 @@
 set -e
-gcc ./src/bi.c -o ./bin/bi
+mkdir -p ./bin/release
+gcc ./src/bi.c -o ./bin/release/bi
