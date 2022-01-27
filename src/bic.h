@@ -52,6 +52,22 @@ imut char OPERATORS[][4] = {
     ":"           // label operator
 };
 
+// is this operator unary?
+#define is_unr_opr(opr)\
+(opr == 2 or opr == 8 or opr == 10 or opr == 21 or opr == 25 or opr == 31)
+
+// is this an assignment operator?
+#define is_ass_opr(opr)\
+(opr == 0 or (opr % 2 == 1 and opr < 18 and opr > 7) or (opr % 2 == 0 and opr > 20))
+
+// is this an equality operator?
+#define is_eql_opr(opr)\
+(opr % 2 == 1 and opr < 8)
+
+// is this operator boolean?
+#define is_bln_opr(opr)\
+(opr > 17 and opr < 21)
+
 typedef struct string_array {
     char ** arr;
     u64     len;
@@ -161,49 +177,94 @@ typedef enum formal_lang_rule {
     LABELD,  JMPSTT , // goto statements
     FUNDEF,  FNCALL , // functions
     BODYDF,           // code scope definition
+    EOLINE,
 } rule_t;
 
 typedef struct ast_node {
-    tkn * code;   // rule pointer. Tells where the parsing is
-    i16 * path;   // code path represented as types (rule_t + token_t)
-    i16   path_t; // the node type
+    tkn * strt;   // code path pointer
+    tkn * end_of; // end of code path
+    u16 * path;   // code path represented as types (rule_t + token_t)
+    u16   path_t; // the node type
 } node;
 
+/* ruler output                *\
+*  ===========================  *
+*  `node` holds the code path,  *
+*  and `end` points to the end  *
+*  of the evaluated code path.  *
+*  when no node is needed it's  *
+*  cheaper send just the token  *
+*  as a pointer rather than an  *
+*  entire node just for it.     *
+\*                             */
+typedef struct ruler_out {
+    node * out;
+    tkn  * end;
+} rulr;
+
 typedef struct ast_t {
-    node * ctxt; // ast context
+    node **ctxt; // ast context
     u64    clen; // context length
 } astt;
 
 #define grow_ast(ctxt) \
-ctxt.ctxt = realloc(ctxt.ctxt, ((ctxt.clen++) + 1) * sizeof(node))
+    ctxt->ctxt = realloc(ctxt->ctxt, ((ctxt->clen++) + 1) * sizeof(node))
 
-// compiler
-void comp(FILE * fptr, char * outf, char * lddf, char * mthd);
+#define pushnode(p, c, t, ctxt)\
+    ctxt->ctxt[ctxt->clen].strt = p;\
+    ctxt->ctxt[ctxt->clen].path = c;\
+    ctxt->ctxt[ctxt->clen].path_t = t;\
+    grow_ast(ctxt)
+
+/* compiler output                       *\
+*  =====================================  *
+*  holds the output name and all defined  *
+*  global-scopped namespaces.             *
+\*                                       */
+typedef struct cout {
+    char *  outn;
+    char *  nasm;
+
+    char ** defn;
+    u64     defc;
+
+    char ** extr;
+    u64     extc;
+} cout;
+
+/* compiler                      *\
+*  =============================  *
+*  compiles the target file into  *
+*  a NASM file (as a string).     *
+\*                               */
+cout * comp(FILE * fptr, char * lddf);
 // lexer
 tkn * lexit();
 
+tkn * matchpair(tkn * c);
+
 // parser rules
-tkn *constd_r(tkn * c, astt * ctxt);
-tkn *define_r(tkn * c, astt * ctxt);
-tkn *assign_r(tkn * c, astt * ctxt);
+rulr constd_r(tkn * c, astt * ctxt, bool jchk);
+rulr define_r(tkn * c, astt * ctxt, bool jchk);
+rulr assign_r(tkn * c, astt * ctxt, bool jchk);
 
-tkn *sttdef_r(tkn * c, astt * ctxt);
-tkn *enumdf_r(tkn * c, astt * ctxt);
-tkn *struct_r(tkn * c, astt * ctxt);
-tkn *arrdef_r(tkn * c, astt * ctxt);
+rulr sttdef_r(tkn * c, astt * ctxt, bool jchk);
+rulr enumdf_r(tkn * c, astt * ctxt, bool jchk);
+rulr struct_r(tkn * c, astt * ctxt, bool jchk);
+rulr arrdef_r(tkn * c, astt * ctxt, bool jchk);
 
-tkn *sttmnt_r(tkn * c, astt * ctxt);
-tkn *exprss_r(tkn * c, astt * ctxt);
+rulr sttmnt_r(tkn * c, astt * ctxt, bool jchk);
+rulr exprss_r(tkn * c, astt * ctxt, bool jchk);
 
-tkn *fundef_r(tkn * c, astt * ctxt);
-tkn *fncall_r(tkn * c, astt * ctxt);
+rulr fun_def_r(tkn * c, astt * ctxt, bool jchk);
+rulr funcall_r(tkn * c, astt * ctxt, bool jchk);
 
-tkn *labeld_r(tkn * c, astt * ctxt);
-tkn *jmpstt_r(tkn * c, astt * ctxt);
+rulr labeldf_r(tkn * c, astt * ctxt, bool jchk);
+rulr jmp_stt_r(tkn * c, astt * ctxt, bool jchk);
 
-tkn *bodydf_r(tkn * c, astt * ctxt);
+rulr bodydef_r(tkn * c, astt * ctxt, bool jchk);
 
-astt flushast(astt * ctxt, u64 i, u64 f);
+astt *flush_ast(astt * ctxt, u64 i, u64 f);
 
 // parser
 astt parse(tkn * tkns);

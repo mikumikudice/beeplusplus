@@ -24,62 +24,34 @@ int main(i32 argc, char ** args){
 
         return 0;
     } else {
-        for(u16 a = 1; a < argc; a++){
-            // outfile
-            if(!strcmp(args[a], "-o"))
-                if(outf == nil)
-                    if(a + 1 <= argc - 2) outf = args[++a];
-                    else cmperr("illegal use of argument", nil, nil);
-                else
-                    cmperr("multiple out-file definitions", nil, nil);
-
-            // compilation method
-            else
-            if(!strcmp(args[a], "-r") // release
-            or !strcmp(args[a], "-d") // debug
-            ){
-                if(mthd == nil){
-                    if(strlen(args[a]) == 3) nasm = T;
-                    mthd = args[a];
-                }
-                else
-                cmperr("compilation method defined multiple times", nil, nil);
-            }
-            else if(!strcmp(args[a], "-s"))
-                if(!strp) strp = T;
-                else cmperr("compilation flag defined multiple times", nil, nil);
-
-            else if(!strcmp(args[a], "-S"))
-                if(!nasm) nasm = T;
-                else cmperr("compilation flag defined multiple times", nil, nil);
-
-            // compilation flags
-            else if(!strcmp(args[a], "--trackidx"))
-                if(!tidx) tidx = T;
-                else cmperr("compilation flag defined multiple times", nil, nil);
+        // check files
+        for(u64 f = 1; f < argc; f++){
+            if(access(args[f], F_OK))
+                cmperr("the given file does not"
+                " exist or cannot be read", nil, nil);
+            // TODO: compile all files and link them
         }
-        // check file
-        if(access(args[argc - 1], F_OK))
-            cmperr("the given file does not"
-            " exist or cannot be read", nil, nil);
-        else
-        lddf = args[argc - 1];
 
-        if(outf == nil) outf = "a.out";
-        if(mthd == nil) mthd = "-d";
+        u64 len = strlen(args[1]);
+        char * lddf = malloc(len + 1);
+        memcpy(lddf, args[1], len);
+        lddf[len] = '\0';
+
         fptr = fopen(lddf, "r");
-
         // null file
         if(fptr == nil)
             cmperr("something went wrong"
             " while reading the file", nil, nil);
-
         // prettify name
         char * temp = strrchr(lddf, '/');
-        if(temp) lddf = temp + 1;
-    }
-    // compile
-    comp(fptr, outf, lddf, mthd);
+        if(temp) temp = temp + 1;
 
+        // compile
+        cout * nasm = comp(fptr, temp);
+        free(lddf);
+
+        free(nasm->outn);
+        free(nasm);
+    }
     return 0;
 }

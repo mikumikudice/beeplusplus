@@ -3,22 +3,33 @@
 // error messages
 imut char * REALERR = "an unexpected error occurred";
 imut char * UNEXPCT = "unexpected symbol found here";
+imut char * EXPCTDS = "expected expression or terminator";
 imut char * UNCLSTR = "unclosed string found here";
 imut char * UNCCMMT = "unclosed multiline comment found here";
 imut char * UNCBRCK = "unclosed bracket found here";
 imut char * UNCPARN = "unclosed parentheses found here";
+imut char * PRVONHR = "previously opened here";
+imut char * ALONEXP = "expression out of context found here";
 imut char * CALLERR = "attempt to call an undefined function";
 imut char * TOOFEWC = "too few arguments in the statement";
 imut char * TOOMUCH = "too much arguments in the statement";
 imut char * MULTIDF = "attempt to define multiple times the same namespace";
 imut char * LITRIDX = "attempt to use a literal as namespace";
 imut char * KWRDIDX = "attempt to use a keyword as namespace";
+imut char * NOTERMN = "no terminator at the end of the line";
 
 // array of source code lines
 charr code;
 u64 csz = LSIZE;
 
-void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
+cout * comp(FILE * fptr, char * lddf){
+    // output
+    cout * out = malloc(sizeof(out));
+
+    char * dummy = malloc(strlen(lddf) + 1);
+    strcpy(dummy, lddf);
+    out->outn  = strgsub(dummy, ".bi", "");
+
     // compiling timer
     clock_t crnt, oldt;
     oldt = clock();
@@ -33,49 +44,56 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     u64 i = 0;
 
     // get source
-    bool isinc = F, isins = F, wait_err = F;
+    bool isstr = F;   // is the current sentence within a string?
+    bool iscmt = F;   // is the current sentence a comment?
+    bool isslc = F;   // the comment in question is single-lined?
+    bool isscp = F;   // is the current content within a scope?
+    bool ispar = F;   // is the current content within parentheses?
+
+    i64  clvl  = 0;   // current comment nesting level
+    i64  slvl  = 0;   // current scope level
+    i64  plvl  = 0;   // current parentheses level
+
+    u64 lcmt[csz << 2][2]; // keep track of where the last comment were oppened
+    u64 lscp[csz << 2][2]; // keep track of where the last scope were oppened
+    u64 lpar[csz << 2][2]; // keep track of where the last parentheses were oppened
+
+    char last = 0;
+
+    // init first line
+    code.arr[code.len] = malloc(LSIZE);
+
     for(char c; (c = fgetc(fptr));){
         // skip non textual chars
         if(c < 9 and c >= 0) continue;
 
-        // enter multiline comment
-        if(c == '*' and l == '/' and !isins){
-            cmtl++;
-            isinc = T;
+        // single-lined comment
+        if(c == '/' and last == '/'){
+            iscmt = T;
+            isslc = T;
+        // multiple-lined
+        } else if(c == '*' and last == '/'){
+            iscmt = T;
+            lcmt[clvl][0] = code.len;
+            lcmt[clvl][1] = i - 1;
+            clvl++;
+        // closing comment symbol
+        } else if(c == '/' and last == '*'){
+            clvl--;
+            if(clvl == 0) iscmt = F;
+            // number of closing symbols is greater than opening ones
+            else if(clvl < 0){
+                tkn arrow = {
+                    .line = code.len,
+                    .coll = i
+                };
+                code.arr[code.len][i++] = c;
+                code.arr[code.len][i] = '\0';
+                cmperr(UNEXPCT, &arrow, nil);
+            }
+            continue;
         }
-        // exit multiline comment
-        if(c == '/' and l == '*' and !isins){
-            cmtl--;
-            if(cmtl == 0) isinc = F;
-            else if(cmtl < 0 and !wait_err) wait_err = i;
-        }
-        // ignore symbols inside of strings
-        if(isins){
-            // it's a quote
-            if(c == metachar[0].val[0] or c == metachar[1].val[0])
-                // it's not scaped
-                if(!isscpd(code.arr[code.len], i)){
-                    // is inside or at the end of a string
-                    // and matches with the openning char
-                    if(isins and c == o) isins = F;
-                    // it's the oppening char of an string/char literal
-                    else if(!isins){
-                        isins = T;
-                        // remember the type of the quote
-                        o = c;
-                    }
-                }
-        }
-        // last char is always updated
-        l = c;
 
-        // first char of line
-        if(!i){
-            // alloc line
-            code.arr[code.len] = malloc(LSIZE);
-            // resset length
-            csz = LSIZE;
-        }
         // grow line
         if(i >= csz) {
             csz += LSIZE / 2;
@@ -98,73 +116,116 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
             }
         }
 
-        if(c != '\n' and c != EOF)
-            code.arr[code.len][i++] = c;
+        // append code
+        if(c != '\n' and c != EOF){
+            if(!iscmt){
+                code.arr[code.len][i++] = c;
 
-        else {
-            code.arr[code.len][i] = '\0';
-
-            if(wait_err){
-                tkn arrw = {
-                    .line  = code.len,
-                    .coll  = wait_err - 1,
-                };
-                cmperr(UNEXPCT, &arrw, nil);
-            }
-            i = 0;
-
-            if(!isinc){
-                if(code.arr[code.len][0] != '/'
-                and code.arr[code.len][1] != '/')
-                if(!hassym(code.arr[code.len])){
-                    // default error arrow
-                    tkn arrw = {
-                        .line  = code.len,
-                        .coll  = strlen(code.arr[code.len]) - 1
-                    };
-                    cmperr("expected expression or terminator", &arrw, nil);
-                }
-
-                // check for both quote types
-                for(u16 s = 0; s < 2; s++){
-                    u64 fidx = strfnd(code.arr[code.len], metachar[s].val);
-                    if(fidx != -1){
-                        // the first up to the last quote
-                        u64 lidx = strfndl(code.arr[code.len], metachar[s].val);
-
-                        tkn arrow = {
-                            .line = code.len,
-                            .coll = strlen(code.arr[code.len]) - 1
-                        };
-                        if(lidx == -1) cmperr(UNCLSTR, &arrow, nil);
-
-                        // check count of quotes
-                        u64 cnnt = 0;
-
-                        // check if the quote count matches
-                        for(u64 idx = fidx; idx <= lidx; idx++){
-                            if(code.arr[code.len][idx] == metachar[s].val[0]
-                            and code.arr[code.len][idx - 1] != '\\') cnnt++;
+                // when coming back to check symbol, skip it
+                if(last != c){
+                    // take care of parenthesis and scopes
+                    if(c == '{' and !isstr){
+                        isscp = T;
+                        lscp[plvl][0] = l;
+                        lscp[plvl][1] = c;
+                        slvl++;
+                    }
+                    else if(c == '}' and !isstr){
+                        slvl--;
+                        if(!slvl) isscp = F;
+                        else if(plvl < 0){
+                            tkn this = {.line = l, .coll = c};
+                            cmperr(UNEXPCT, &this, nil);
                         }
+                    }
 
-                        // missing quotes
-                        if(cnnt % 2 != 0)
-                        cmperr(UNCLSTR, &arrow, nil);
+                    else if(c == '(' and !isstr){
+                        ispar = T;
+                        lpar[plvl][0] = l;
+                        lpar[plvl][1] = c;
+                        plvl++;
+                    }
+                    else if(c == ')' and !isstr){
+                        plvl--;
+                        if(!plvl) ispar = F;
+                        else if(plvl < 0){
+                            tkn this = {.line = l, .coll = c};
+                            cmperr(UNEXPCT, &this, nil);
+                        }
                     }
                 }
+            } else if(i > 0){
+                strcpy(code.arr[code.len], "");
+                i = 0;
             }
+            last = c;
+        // reached end of line
+        } else {
+            if(!iscmt){
+                code.arr[code.len][i] = '\0';
+
+                // check it here to avoid
+                // skipping the last char
+                if(c == EOF){
+                    code.len++;
+                    break;
+                }
+            // end of line, end of comment
+            } else if(isslc) iscmt = F;
+
+            i = 0;
             // next line
             code.arr = realloc(code.arr, (code.len + 2) * sizeof(char *));
             if(!code.arr) cmperr(REALERR, nil, nil);
 
-            code.len++;
+            // alloc next line
+            code.arr[++code.len] = malloc(LSIZE);
 
-            // check it here to avoid
-            // skipping the last char
-            if(c == EOF) break;
+            if(iscmt and !isslc) strcpy(code.arr[code.len], "");
+            // resset length
+            csz = LSIZE;
         }
     }
     fclose(fptr);
+
+    // check for errors
+    if(iscmt){
+        tkn tmp = {
+            .line = code.len - 1,
+            .coll = strlen(code.arr[code.len - 1]) - 1
+        };
+        tkn cmp = {
+            .line = lcmt[clvl - 1][0],
+            .coll = lcmt[clvl - 1][1],
+            .vall.str = "previously started here"
+        };
+        cmperr(UNCCMMT, &tmp, &cmp);
+    }
+    else if(isscp){
+        tkn tmp = {
+            .line = code.len - 1,
+            .coll = strlen(code.arr[code.len - 1]) - 1
+        };
+        tkn cmp = {
+            .line = lscp[slvl - 1][0],
+            .coll = lscp[slvl - 1][1],
+            .vall.str = "previously started here"
+        };
+        cmperr(UNCBRCK, &tmp, &cmp);
+    }
+    else if(ispar){
+        tkn tmp = {
+            .line = code.len - 1,
+            .coll = strlen(code.arr[code.len - 1]) - 1
+        };
+        tkn cmp = {
+            .line = lpar[plvl - 1][0],
+            .coll = lpar[plvl - 1][1],
+            .vall.str = "previously started here"
+        };
+        cmperr(UNCPARN, &tmp, &cmp);
+    }
+
 
     COL(GRN);
     puts("+lexing code   ...");
@@ -182,7 +243,8 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     // TODO: final ast gen
 
     tkn * tok, * old = nil;
-    u64   cnt = tkns->apdx;
+    i64   cnt = tkns->apdx;
+    // free tokens
     for(tok = tkns; cnt > 0; tok = tok->next, cnt--){
         // only free string values
         if(tok->type == INDEXER)
@@ -200,6 +262,11 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     // TODO: optimizations
     // TODO: nasm gen
 
+    // free basic ast
+    for(u64 n = 0; n < bast.clen; n++){
+        free(bast.ctxt[n]->path);
+        free(bast.ctxt[n]);
+    }
     free(bast.ctxt);
     free_str();
 
@@ -207,10 +274,12 @@ void comp(FILE * fptr, char * outf, char * lddf, char * mthd){
     crnt = clock();
     f32 dt = ((double)(crnt - oldt)) / CLOCKS_PER_SEC; 
 
-    printf("-compiled %s into %s in ", lddf, outf);
+    printf("-compiled %s into %s in ", lddf, out->outn);
     COL(GRN);
     printf("%.5fs\n", dt);
     COL(DEF);
+
+    return out;
 }
 
 void assert(bool check, imut char * msg){
@@ -231,18 +300,20 @@ void cmperr(imut char * err, tkn * arw, tkn * cmpl){
     fprintf(stderr, DEF);
 
     fprintf(stderr, " %s", err);
-    if(arw)
-    fprintf(stderr, " at %ld:%ld:\n", arw->line + 1, arw->coll + 1);
-    else fprintf(stderr, "\n");
-
+    // print arrow
     if(arw){
+        fprintf(stderr, " at %ld:%ld:\n", arw->line + 1, arw->coll + 1);
         fprintf(stderr, BLU);
-        fprintf(stderr, "\n\t%ld | %s\n\t", arw->line + 1, code.arr[arw->line]);
+
+        char stt[csz];
+        sprintf(stt, "\n\t%ld | ", arw->line + 1);
+
+        fprintf(stderr, "%s%s\n\t", stt, code.arr[arw->line]);
         fprintf(stderr, DEF);
         fflush(stderr);
 
         fprintf(stderr, RED);
-        for(u16 i = 0; i < arw->coll + 4; i++){
+        for(u16 i = 0; i < arw->coll + strlen(stt) - 1; i++){
             if(i > 3) fprintf(stderr, "~");
             else fprintf(stderr, " ");
         }
@@ -250,10 +321,12 @@ void cmperr(imut char * err, tkn * arw, tkn * cmpl){
 
         fprintf(stderr, "^\n");
         fprintf(stderr, DEF);
-    }
+
+    // just end it
+    } else fprintf(stderr, "\n");
+
     if(cmpl != nil){
         fprintf(stderr, cmpl->vall.str);
-        free(cmpl->vall.str);
 
         fprintf(stderr, " at %ld:%ld:\n",
         cmpl->line + 1, cmpl->coll + 1);

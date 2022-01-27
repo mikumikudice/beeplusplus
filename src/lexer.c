@@ -122,28 +122,20 @@ void free_str(){
 tkn * lexit(){
     // primitive ast output
     tkn * out = malloc(sizeof(tkn));
+    tkn **lst = &out; // the address of the last token pointer
+
+    // set up the chain loop
+    out->last = &EOTT;
+    EOTT.next = out;
     out->apdx = 0;    // the count of tokens
-    tkn **tok = &out; // the current token
-
-    bool iscmt = F;   // is the current sentence a comment?
-    bool isspl = F;   // the comment in question is single-lined?
-    bool isscp = F;   // is the current content within a scope?
-    bool ispar = F;   // is the current content within parentheses?
-
-    i64  clvl  = 0;   // current comment nesting level
-    i64  slvl  = 0;   // current scope level
-    i64  plvl  = 0;   // current parentheses level
-
-    u64 lcmt[csz * code.len][2]; // keep track of where the last comment were oppened
-    u64 lscp[csz * code.len][2]; // keep track of where the last scope were oppened
-    u64 lpar[csz * code.len][2]; // keep track of where the last parentheses were oppened
-
-    i64 last = -1;
 
     // current line
     for(u64 l = 0; l < code.len; l++){
         u64 col = 0;                   // last token's column
         u64 lsz = strlen(code.arr[l]); // line length
+
+        // skip comment lines
+        if(lsz == 0) continue;
 
         char * src = malloc(lsz + 1);
         strcpy(src, code.arr[l]);
@@ -153,87 +145,12 @@ tkn * lexit(){
         char ctkn[lsz];
 
         for(u64 c = 0; c < lsz; c++){
-            // enter multiline comment
-            if(src[c] == '/' and src[(c + 1) % lsz] == '*' and !isstr){
-                // store index of the first comment symbol
-                if(!iscmt){
-                    lcmt[clvl][0] = l;
-                    lcmt[clvl][0] = c;
-                }
-                clvl++;
-                iscmt = T;
-                c += 2;
-                if(c > lsz) continue;
-            }
-
-            if(!isspl)
-            // exit multiline comment
-            if(src[c] == '*' and src[(c + 1) % lsz] == '/' and !isstr){
-                clvl--;
-                if(!clvl) iscmt = F;
-                else if(clvl < 0){
-                    tkn this = {.line = l, .coll = c};
-                    cmperr(UNEXPCT, &this, nil);
-                }
-
-                c += 2; // skip to the char after the symbol
-                if(c >= lsz) continue;
-            }
-
-            // single line comment
-            if(c + 1 < lsz)
-            if(src[c] == '/' and src[c + 1] == '/'){
-                iscmt = T;
-                isspl = T;
-            }
-            if(isspl and iscmt)
-            if(c == lsz - 1){
-                iscmt = F;
-                isspl = F;
-                continue;
-            }
-            if(iscmt) continue;
-
-            // when coming back to check symbol, skip it
-            if(last != c){
-                // take care of parenthesis and scopes
-                if(src[c] == '{' and !isstr){
-                    isscp = T;
-                    lscp[plvl][0] = l;
-                    lscp[plvl][1] = c;
-                    slvl++;
-                }
-                else if(src[c] == '}' and !isstr){
-                    slvl--;
-                    if(!slvl) isscp = F;
-                    else if(plvl < 0){
-                        tkn this = {.line = l, .coll = c};
-                        cmperr(UNEXPCT, &this, nil);
-                    }
-                }
-
-                else if(src[c] == '(' and !isstr){
-                    ispar = T;
-                    lpar[plvl][0] = l;
-                    lpar[plvl][1] = c;
-                    plvl++;
-                }
-                else if(src[c] == ')' and !isstr){
-                    plvl--;
-                    if(!plvl) ispar = F;
-                    else if(plvl < 0){
-                        tkn this = {.line = l, .coll = c};
-                        cmperr(UNEXPCT, &this, nil);
-                    }
-                }
-            }
-            last = c;
-
             // it's a token letter, just append
             if(validn(src[c])) ctkn[ctp++] = src[c];
             // do something now
             else {
-                tkn this;
+                tkn this; // the next token
+
                 this.type = UNKNOWN;
                 this.coll = col;
                 this.line = l;
@@ -449,7 +366,7 @@ tkn * lexit(){
                             if(!strcmp(SYMBOLS[s].s, t)){
                                 this.vall.num = s;
                                 this.type = LSYMBOL;
-                                this.apdx = 1;
+                                this.apdx = 0;
 
                                 c += len - 1;
                                 break;
@@ -467,7 +384,7 @@ tkn * lexit(){
                         if(!strcmp(SYMBOLS[s].e, t)){
                             this.vall.num = s;
                             this.type = LSYMBOL;
-                            this.apdx = 0;
+                            this.apdx = 1;
 
                             c += len - 1;
                             break;
@@ -511,31 +428,26 @@ tkn * lexit(){
                 if(this.type != UNKNOWN) col = c + 1;
                 else cmperr(UNEXPCT, &this, nil);
 
-                // "out" points to the this' next token,
-                // the old out's next now points to this
-
-                // old_out.next = this | new_out = this.next
-
                 // store the previous token on the current
-                this.last = (*tok);
-                if(!(l == code.len and c == lsz)){
-                    // once the token is already on the chain,
-                    // move to the current's next token
-                    (*tok)->next = malloc(sizeof(tkn));
-                    memcpy((*tok)->next, &this, sizeof(tkn));
-                    // the next token is the next of the current, so update tok
-                    tok = &(*tok)->next;
+                this.last = *lst;
 
-                    // the first token holds the count of tokens
-                    out->apdx++;
-                // end of tree
-                } else {
+                // once the token is already on the chain,
+                // move to the current's next token
+                (*lst)->next = malloc(sizeof(tkn));
+
+                if(l == code.len - 1 and c == lsz - 1){
                     // EOTT holds the first token and the first token
                     // holds EOTT, so this chain is circular
                     this.next = &EOTT;
-                    EOTT.next = out;
-                    out->last = &EOTT;
+                    EOTT.last = (*lst)->next;
+                    out->apdx++;
                 }
+                memcpy((*lst)->next, &this, sizeof(tkn));
+                // the next token is the next of the current, so update lst
+                lst = &(*lst)->next;
+
+                // the first token holds the count of tokens
+                out->apdx++;
             }
         }
         if(isstr){
@@ -547,51 +459,7 @@ tkn * lexit(){
         }
         free(src);
     }
-
-    if(iscmt){
-        tkn tmp = {
-            .line = code.len - 1,
-            .coll = strlen(code.arr[code.len - 1]) - 1
-        };
-        tkn cmp = {
-            .line = lcmt[clvl - 1][0],
-            .coll = lcmt[clvl - 1][1]
-        };
-        cmp.vall.str = malloc(24);
-
-        strcpy(cmp.vall.str, "previously started here");
-        cmperr(UNCCMMT, &tmp, &cmp);
-    }
-    else if(isscp){
-        tkn tmp = {
-            .line = code.len - 1,
-            .coll = strlen(code.arr[code.len - 1]) - 1
-        };
-        tkn cmp = {
-            .line = lscp[slvl - 1][0],
-            .coll = lscp[slvl - 1][1]
-        };
-        cmp.vall.str = malloc(24);
-
-        strcpy(cmp.vall.str, "previously started here");
-        cmperr(UNCBRCK, &tmp, &cmp);
-    }
-    else if(ispar){
-        tkn tmp = {
-            .line = code.len - 1,
-            .coll = strlen(code.arr[code.len - 1]) - 1
-        };
-        tkn cmp = {
-            .line = lpar[plvl - 1][0],
-            .coll = lpar[plvl - 1][1]
-        };
-        cmp.vall.str = malloc(24);
-
-        strcpy(cmp.vall.str, "previously started here");
-        cmperr(UNCPARN, &tmp, &cmp);
-    }
-
-    // return out, that points to the first token,
-    // and not tok, that points to the last token
+    // return out, that points to
+    // the first and last tokens
     return out;
 }
