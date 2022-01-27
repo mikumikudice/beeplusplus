@@ -4,6 +4,8 @@
 #define CVER "0.0.1"
 #define DATE "2021-2022"
 
+#define TUTL "https://github.com/mateus-md/beeplusplus/blob/master/doc/Tutorial/"
+
 #include <unistd.h>
 
 int main(i32 argc, char ** args){
@@ -14,14 +16,12 @@ int main(i32 argc, char ** args){
     if(argc == 1){
         printf("B++ (incremented B) Compiler v%s - %s "\
         "copyright(c) Mateus M. D. Souza\n", CVER, DATE);
-        puts("USAGE:\n\n bi <comp args> [filename]");
-
-        puts("\ncomp args:\n");
-        puts("-o : build name; sets the output file name");
-        puts("-r : release build; generates optimized artifacts");
-        puts("-d : debug build (default); generates unoptimized artifacts");
-        puts("-S : generates an asm file not assembled");
-
+        puts("USAGE:\n\n bi [main file] [other files]\n");
+        printf(
+            "NOTE:\n to change output file name or give"\
+            " compiler args, put in the source file.\nsee"\
+            " the docs (%s)\nto know how to do so.\n", TUTL
+        );
         return 0;
     } else {
         // check files
