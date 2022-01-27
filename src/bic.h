@@ -2,6 +2,16 @@
     #include "cmmn.h"
 #endif
 
+#define assert(check, msg)\
+    if(!(check)){\
+        fprintf(stderr, RED);\
+        fprintf(stderr, "[ERROR]");\
+        fprintf(stderr, DEF);\
+        if(msg) fprintf(stderr, ": %s at %d in %s\n", msg, __LINE__, __FILE__);\
+        else fprintf(stderr, ": %s failed at %d in %s\n", #check, __LINE__, __FILE__);\
+        exit(-1);\
+    }
+
 // list of the reserved keywords
 imut char KEYWORDS[][8] = {
     "if"   , "elif" , "else" ,
@@ -71,11 +81,19 @@ imut char OPERATORS[][4] = {
 typedef struct string_array {
     char ** arr;
     u64     len;
-} charr;
+} stra;
 
-#define carr_push(a, v) \
+#define stra_push(a, v) \
 (a.arr[a.len++] = v, \
 a.arr = realloc(a.arr, (a.len + 1) * sizeof(char *)))
+
+i64 find_itm(stra * a, char * i);
+i64 find_itm(stra * a, char * i){
+    for(u64 t = 0; t < a->len; t++){
+        if(!strcmp(a->arr[t], i)) return t;
+    }
+    return -1;
+}
 
 typedef struct pattern {
     char * s, * e;
@@ -158,7 +176,8 @@ enum {
 
 // when tkn::next points to EOTT the token tree
 // is over. EOTT also holds the first token
-tkn EOTT = {};
+tkn __EOTT = {};
+tkn * EOTT = &__EOTT;
 
 /* formal Language rules         *\
 *  =============================  *
@@ -216,6 +235,7 @@ typedef struct ast_t {
     ctxt->ctxt[ctxt->clen].path_t = t;\
     grow_ast(ctxt)
 
+
 /* compiler output                       *\
 *  =====================================  *
 *  holds the output name and all defined  *
@@ -232,42 +252,48 @@ typedef struct cout {
     u64     extc;
 } cout;
 
+typedef enum comp_mode {
+    CHECK, DEBUG, BUILD
+} cmod;
+
 /* compiler                      *\
 *  =============================  *
 *  compiles the target file into  *
 *  a NASM file (as a string).     *
 \*                               */
-cout * comp(FILE * fptr, char * lddf);
+cout * comp(FILE * fptr, char * lddf, char * mode);
 // lexer
 tkn * lexit();
+
+char * get_tokval(tkn * tok);
 
 tkn * matchpair(tkn * c);
 
 // parser rules
-rulr constd_r(tkn * c, astt * ctxt, bool jchk);
-rulr define_r(tkn * c, astt * ctxt, bool jchk);
-rulr assign_r(tkn * c, astt * ctxt, bool jchk);
+rulr constd_r(tkn * c, bool jchk);
+rulr define_r(tkn * c, bool jchk);
+rulr assign_r(tkn * c, bool jchk);
 
-rulr sttdef_r(tkn * c, astt * ctxt, bool jchk);
-rulr enumdf_r(tkn * c, astt * ctxt, bool jchk);
-rulr struct_r(tkn * c, astt * ctxt, bool jchk);
-rulr arrdef_r(tkn * c, astt * ctxt, bool jchk);
+rulr sttdef_r(tkn * c, bool jchk);
+rulr enumdf_r(tkn * c, bool jchk);
+rulr struct_r(tkn * c, bool jchk);
+rulr arrdef_r(tkn * c, bool jchk);
 
-rulr sttmnt_r(tkn * c, astt * ctxt, bool jchk);
-rulr exprss_r(tkn * c, astt * ctxt, bool jchk);
+rulr sttmnt_r(tkn * c, bool jchk);
+rulr exprss_r(tkn * c, bool jchk, bool prnd);
 
-rulr fun_def_r(tkn * c, astt * ctxt, bool jchk);
-rulr funcall_r(tkn * c, astt * ctxt, bool jchk);
+rulr fun_def_r(tkn * c, bool jchk);
+rulr funcall_r(tkn * c, bool jchk);
 
-rulr labeldf_r(tkn * c, astt * ctxt, bool jchk);
-rulr jmp_stt_r(tkn * c, astt * ctxt, bool jchk);
+rulr labeldf_r(tkn * c, bool jchk);
+rulr jmp_stt_r(tkn * c, bool jchk);
 
-rulr bodydef_r(tkn * c, astt * ctxt, bool jchk);
+rulr bodydef_r(tkn * c, bool jchk);
 
 astt *flush_ast(astt * ctxt, u64 i, u64 f);
 
 // parser
-astt parse(tkn * tkns);
+astt parse(tkn * tkns, cmod mode);
 
 bool isnumc(char chr);
 bool ishexc(char chr);
@@ -286,7 +312,6 @@ u16    strtoptr(char * str);
 void   free_str();
 
 // compilation error
-void assert(bool check, imut char * msg);
 void cmperr(imut char * err, tkn * arw, tkn * cmpl);
 void wrning(imut char * wrn, tkn * arw, tkn * cmpl);
 

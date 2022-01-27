@@ -16,7 +16,12 @@ int main(i32 argc, char ** args){
     if(argc == 1){
         printf("B++ (incremented B) Compiler v%s - %s "\
         "copyright(c) Mateus M. D. Souza\n", CVER, DATE);
-        puts("USAGE:\n\n bi [main file] [other files]\n");
+
+        puts("USAGE:\n\n bi [action] [main file] [other files]\n");
+        puts("[action]'s:\n\n check: only checks the syntax and highlights errors"\
+            "\n debug: compiles the source in debug mode"\
+            "\n build: compiles the source in release mode\n"
+        );
         printf(
             "NOTE:\n to change output file name or give"\
             " compiler args, put in the source file.\nsee"\
@@ -24,17 +29,26 @@ int main(i32 argc, char ** args){
         );
         return 0;
     } else {
+        if( strcmp(args[1], "check")
+        and strcmp(args[1], "debug")
+        and strcmp(args[1], "build"))
+            // invalid argument
+            cmperr("invalid compiler argument.\n"\
+            "please try running without args to get help.", nil, nil);
+
+        if(argc < 3) cmperr("source file is missing", nil, nil);
+
         // check files
-        for(u64 f = 1; f < argc; f++){
+        for(u64 f = 2; f < argc; f++){
             if(access(args[f], F_OK))
                 cmperr("the given file does not"
                 " exist or cannot be read", nil, nil);
             // TODO: compile all files and link them
         }
 
-        u64 len = strlen(args[1]);
+        u64 len = strlen(args[2]);
         char * lddf = malloc(len + 1);
-        memcpy(lddf, args[1], len);
+        memcpy(lddf, args[2], len);
         lddf[len] = '\0';
 
         fptr = fopen(lddf, "r");
@@ -47,7 +61,7 @@ int main(i32 argc, char ** args){
         if(temp) temp = temp + 1;
 
         // compile
-        cout * nasm = comp(fptr, temp);
+        cout * nasm = comp(fptr, temp, args[1]);
         free(lddf);
 
         free(nasm->outn);

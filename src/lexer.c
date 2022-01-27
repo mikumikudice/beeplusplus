@@ -3,7 +3,7 @@
 #endif
 
 // header-located string array
-charr sarr;
+stra sarr;
 
 bool isnumc(char chr){
     return isdigit(chr);
@@ -109,7 +109,7 @@ u16 strtoptr(char * str){
         if(!strcmp(str, sarr.arr[s])) return s;
     }
     // push the new string
-    carr_push(sarr, str);
+    stra_push(sarr, str);
     return sarr.len - 1;
 }
 
@@ -122,12 +122,11 @@ void free_str(){
 tkn * lexit(){
     // primitive ast output
     tkn * out = malloc(sizeof(tkn));
-    tkn **lst = &out; // the address of the last token pointer
+    tkn **lst = &EOTT; // the address of the last token pointer
 
     // set up the chain loop
-    out->last = &EOTT;
-    EOTT.next = out;
-    out->apdx = 0;    // the count of tokens
+    EOTT->next = out;
+    EOTT->apdx = 0;    // the count of tokens
 
     // current line
     for(u64 l = 0; l < code.len; l++){
@@ -431,23 +430,26 @@ tkn * lexit(){
                 // store the previous token on the current
                 this.last = *lst;
 
+                tkn ** next;
+                if(EOTT->apdx == 0) next = &out;
+                else next = &(*lst)->next;
+
                 // once the token is already on the chain,
                 // move to the current's next token
-                (*lst)->next = malloc(sizeof(tkn));
+                *next = malloc(sizeof(tkn));
 
                 if(l == code.len - 1 and c == lsz - 1){
                     // EOTT holds the first token and the first token
                     // holds EOTT, so this chain is circular
-                    this.next = &EOTT;
-                    EOTT.last = (*lst)->next;
-                    out->apdx++;
+                    this.next = EOTT;
+                    EOTT->last = *next;
                 }
-                memcpy((*lst)->next, &this, sizeof(tkn));
+                memcpy(*next, &this, sizeof(tkn));
                 // the next token is the next of the current, so update lst
-                lst = &(*lst)->next;
+                lst = next;
 
                 // the first token holds the count of tokens
-                out->apdx++;
+                EOTT->apdx++;
             }
         }
         if(isstr){

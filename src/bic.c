@@ -19,10 +19,10 @@ imut char * KWRDIDX = "attempt to use a keyword as namespace";
 imut char * NOTERMN = "no terminator at the end of the line";
 
 // array of source code lines
-charr code;
+stra code;
 u64 csz = LSIZE;
 
-cout * comp(FILE * fptr, char * lddf){
+cout * comp(FILE * fptr, char * lddf, char * mode){
     // output
     cout * out = malloc(sizeof(out));
 
@@ -237,13 +237,24 @@ cout * comp(FILE * fptr, char * lddf){
     puts("+parsing code  ...");
     COL(DEF);
 
+    cmod cmd;
+    if(!strcmp(mode, "check")) cmd = CHECK;
+    else if (!strcmp(mode, "debug")) cmd = DEBUG;
+    else cmd = BUILD;
+
     // basic ast
-    astt bast = parse(tkns);
+    astt bast = parse(tkns, cmd);
+    if(cmd == CHECK) goto skip_cmp;
 
     // TODO: final ast gen
+    if(cmd == DEBUG) goto skip_opt;
+    // TODO: optimizations
+    skip_opt:
+    // TODO: nasm gen
 
+    skip_cmp:
     tkn * tok, * old = nil;
-    i64   cnt = tkns->apdx;
+    i64   cnt = EOTT->apdx;
     // free tokens
     for(tok = tkns; cnt > 0; tok = tok->next, cnt--){
         // only free string values
@@ -259,9 +270,6 @@ cout * comp(FILE * fptr, char * lddf){
     }
     free(old);
 
-    // TODO: optimizations
-    // TODO: nasm gen
-
     // free basic ast
     for(u64 n = 0; n < bast.clen; n++){
         free(bast.ctxt[n]->path);
@@ -272,7 +280,7 @@ cout * comp(FILE * fptr, char * lddf){
 
     // compilation time
     crnt = clock();
-    f32 dt = ((double)(crnt - oldt)) / CLOCKS_PER_SEC; 
+    f32 dt = ((double)(crnt - oldt)) / (double)(CLOCKS_PER_SEC);
 
     printf("-compiled %s into %s in ", lddf, out->outn);
     COL(GRN);
@@ -280,17 +288,6 @@ cout * comp(FILE * fptr, char * lddf){
     COL(DEF);
 
     return out;
-}
-
-void assert(bool check, imut char * msg){
-    if(check){
-        fprintf(stderr, RED);
-        fprintf(stderr, "[ERROR]");
-        fprintf(stderr, DEF);
-
-        fprintf(stderr, ": %s\n", msg);
-        exit(-1);
-    }
 }
 
 void cmperr(imut char * err, tkn * arw, tkn * cmpl){
