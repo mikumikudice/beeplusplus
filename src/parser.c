@@ -2,7 +2,11 @@
     #include "bic.h"
 #endif
 
-stra namespaces;
+#define eq_sym(tok, sym, side)\
+(tok->type == LSYMBOL and tok->vall.num == sym and tok->apdx == (side > 0 ? side : tok->apdx))
+
+#define eq_opr(tok, opr)\
+(tok->type == OPERATOR and tok->vall.num == opr)
 
 // code path rules
 rulr define_r(tkn * c, bool jchk){
@@ -16,10 +20,9 @@ rulr define_r(tkn * c, bool jchk){
             if(!jchk){
                 path.out = malloc(sizeof(node));
 
-                path.out->path = malloc(sizeof(u16) * 3);
+                path.out->path = malloc(sizeof(u16) * 2);
                 path.out->path[0] = KEYWORD;
                 path.out->path[1] = EXPRSS;
-                path.out->path[2] = EOLINE;
 
                 path.out->strt = c;
                 path.out->end_of = exp.end;
@@ -38,10 +41,9 @@ rulr define_r(tkn * c, bool jchk){
             if(!jchk){
                 path.out = malloc(sizeof(node));
 
-                path.out->path = malloc(sizeof(u16) * 3);
+                path.out->path = malloc(sizeof(u16) * 2);
                 path.out->path[0] = KEYWORD;
                 path.out->path[1] = INDEXER;
-                path.out->path[2] = EOLINE;
 
                 path.out->strt = c;
                 path.out->end_of = c->next;
@@ -59,24 +61,84 @@ rulr define_r(tkn * c, bool jchk){
 }
 
 rulr assign_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
     return path;
 }
 rulr sttdef_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
     return path;
 }
 rulr enumdf_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
     return path;
 }
 rulr struct_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
     return path;
 }
 
 rulr constd_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
+
+    // the sentense is fallowing the path `NAMESPACE ( ... );`
+    if(eq_sym(c->next, SYM_PAR, 0)){
+        tkn * end = matchpair(c->next);
+        
+        // TODO: handle single line function
+        // it's a function
+        if(eq_sym(end->next, SYM_BRA, 0)){
+            rulr val = fun_def_r(c->next, T);
+
+            if(!jchk){
+                path.out = malloc(sizeof(node));
+                
+                path.out->path = malloc(sizeof(u16) * 2);
+                path.out->path[0] = INDEXER;
+                path.out->path[1] = FUNDEF;
+
+                path.out->strt = c;
+                path.out->end_of  = val.end;
+                path.out->path_t  = CONSTD;
+            }
+            path.end = val.end;
+        // just an expression
+        } else {
+            // validade path
+            exprss_r(c->next->next, T, T);
+
+            if(!jchk){
+                path.out = malloc(sizeof(node));
+                
+                path.out->path = malloc(sizeof(u16) * 2);
+                path.out->path[0] = INDEXER;
+                path.out->path[1] = EXPRSS;
+
+                path.out->strt = c;
+                path.out->end_of  = end;
+                path.out->path_t  = CONSTD;
+            }
+            path.end = end;
+        }
+    // check for expressions and values
+    } else {
+        // an array definition
+        if(eq_sym(c->next, SYM_BRA, 0)){
+            rulr end = arrdef_r(c->next, T);
+            
+            if(jchk){
+                path.out = malloc(sizeof(node));
+                
+                path.out->path = malloc(sizeof(u16) * 2);
+                path.out->path[0] = INDEXER;
+                path.out->path[1] = ARRDEF;
+
+                path.out->strt = c;
+                path.out->end_of  = end.end;
+                path.out->path_t  = CONSTD;
+            }
+            path.end = end.end;
+        }
+    }
     return path;
 }
 
@@ -107,9 +169,7 @@ rulr exprss_r(tkn * c, bool jchk, bool prnd){
                 }
                 // we are within a parenthesis block
                 if(prnd){
-                    if( exp.end->next->type == LSYMBOL
-                    and exp.end->next->vall.num == SYM_PAR
-                    and exp.end->next->apdx == 1)
+                    if(eq_sym(exp.end->next, SYM_PAR, 1))
                         // move the end pointer to the parenthesis
                         exp.end = exp.end->next;
                 }
@@ -134,9 +194,7 @@ rulr exprss_r(tkn * c, bool jchk, bool prnd){
                 // we are within a parenthesis block
                 path.end = c->next;
                 if(prnd){
-                    if( c->next->next->type == LSYMBOL
-                    and c->next->next->vall.num == SYM_PAR
-                    and c->next->next->apdx == 1)
+                    if(eq_sym(c->next->next, SYM_PAR, 1))
                         // move the end pointer to the parenthesis
                         path.end = c->next->next;
                 }
@@ -145,22 +203,17 @@ rulr exprss_r(tkn * c, bool jchk, bool prnd){
         // right hand is invalid
         } else {
             // the current path fallows the `foo [opr] (bar[ ...])` syntax
-            if( c->next->type == LSYMBOL
-            and c->next->vall.num == SYM_PAR
-            and c->next->apdx == 0){
+            if(eq_sym(c->next, SYM_PAR, 0)){
                 // just check if right hand is valid
                 // * c->next->next->next => [opr]->[%(]->[lhd]
                 rulr lhnd = exprss_r(c->next->next->next, T, T);
                 
                 // check if the expresison parenthesis is closed properly
-                if( lhnd.end->type == LSYMBOL
-                and lhnd.end->vall.num == SYM_PAR
-                and lhnd.end->apdx == 1){
+                if(eq_sym(lhnd.end, SYM_PAR, 1)){
                         // move the pointer to the true end. if
                         // the true end is not an semicolon the
                         // caller takes care of it for us.
-                        if( lhnd.end->next->type == LSYMBOL
-                        and lhnd.end->next->vall.num == SYM_CLN){
+                        if(eq_sym(lhnd.end->next, SYM_CLN, lhnd.end->next->apdx)){
                             lhnd.end = lhnd.end->next;
                         }
                 }
@@ -196,7 +249,7 @@ rulr exprss_r(tkn * c, bool jchk, bool prnd){
         if(c->next->type == INDEXER
         or c->next->type == LITERAL){
             // +foo = bar is invalid
-            if((c->last->type == LSYMBOL and c->last->vall.num == SYM_CLN)
+            if((eq_sym(c->last, SYM_CLN, c->last->apdx))
             or (c->last == EOTT)){
                 cmperr(
                     "an expression may not "\
@@ -226,46 +279,85 @@ rulr exprss_r(tkn * c, bool jchk, bool prnd){
 }
 
 rulr arrdef_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
     return path;
 }
 rulr sttmnt_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
     return path;
 }
-rulr fundef_r(tkn * c, bool jchk){
-    rulr path= {};
+
+rulr fun_def_r(tkn * c, bool jchk){
+    rulr path = {};
+
+    // end of arguments
+    tkn * eoa = matchpair(c);
+    // end of function
+    path.end = matchpair(eoa->next);
+
+    // args is not empty
+    if(eoa != c->next){
+        bool which = 0;
+        for(tkn * t = c->next; t != eoa; t = t->next){
+            switch (t->type){
+                case INDEXER:
+                    if(!which){
+                        which = T;
+                        // default values
+                        if(t->next->type == OPERATOR){
+                            rulr end = exprss_r(t->next, T, T);
+                            t = end.end;
+                        }
+                    }
+                    else cmperr(UNEXPCT, t, nil);
+                    break;
+
+                case LSYMBOL:
+                    if(which) which = F;
+                    else cmperr(UNEXPCT, t, nil);
+                    break;
+                default:
+                    cmperr(UNEXPCT, t, nil);
+            }
+        }
+    }
+    if(!jchk){
+        path.out = malloc(sizeof(node));
+
+        path.out->path = malloc(sizeof(u16));
+        path.out->path[0] = FUNDEF;
+
+        path.out->strt = c;
+        path.out->end_of = path.end;
+        path.out->path_t = FUNDEF;
+    }
     return path;
 }
 rulr funcall_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
     return path;
 }
 rulr labeldf_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
     return path;
 }
 rulr jmp_stt_r(tkn * c, bool jchk){
-    rulr path= {};
+    rulr path = {};
     return path;
 }
 
 tkn * matchpair(tkn * c){
-    u64 cnt = 1;
+    u64 cnt = 0;
     // it's a openning symbol
     if(c->apdx == 0){
-        for(tkn * t; t->next != EOTT; t = t->next){
-            // it's a symbol
-            if(t->type == LSYMBOL){
-                // it's the pair that we're looking for
-                if(t->vall.num == c->vall.num){
-                    // if different, it's the pair
-                    if(t->apdx != c->apdx) cnt--;
-                    else cnt++;
+        for(tkn * t = c; t->next != EOTT; t = t->next){
+            if(t->type == LSYMBOL and eq_sym(t, c->vall.num, t->apdx)){
+                // if different, it's the pair
+                if(t->apdx != c->apdx) cnt--;
+                else cnt++;
 
-                    // if scope level matches, return
-                    if(cnt == 0) return t;
-                }
+                // if scope level matches, return
+                if(cnt == 0) return t;
             }
         }
     // it's a closing one
@@ -286,6 +378,11 @@ tkn * matchpair(tkn * c){
         }
     }
     return nil;
+}
+void hasscolon(rulr out){
+    // is an end of line?
+    if(!eq_sym(out.end->next, SYM_CLN, -1))
+        cmperr(NOTERMN, out.end, nil);
 }
 
 /* this function is a very expensive one, *\
@@ -311,9 +408,6 @@ astt * flush_ast(astt * ctxt, u64 i, u64 f){
     return out;
 }
 
-// TODO: check if either the rule failed or it's a syntax error
-void todo();
-void todo(){puts("reached TODO");}
 
 char * get_tokval(tkn * tok){
     switch (tok->type){
@@ -335,9 +429,6 @@ char * get_tokval(tkn * tok){
 }
 
 astt parse(tkn * tkns, cmod mode){
-    // init array
-    namespaces.arr = malloc(sizeof(char *) * EOTT->apdx / 2);
-
     // if any rule breaks, retreat parsing until here
     tkn * safe = tkns, * ctok = tkns;
     astt  ctxt;
@@ -358,7 +449,12 @@ astt parse(tkn * tkns, cmod mode){
                 else {
                     rulr def = constd_r(tok, F);
 
+                    ctxt.ctxt[ctxt.clen] = def.out;
+                    ctxt.clen++;
 
+                    // is an end of line?
+                    hasscolon(def);
+                    tok = def.end;
                 }
                 break;
 
@@ -372,10 +468,7 @@ astt parse(tkn * tkns, cmod mode){
                     ctxt.clen++;
 
                     // is an end of line?
-                    if(!(exp.end->type == LSYMBOL
-                    and  exp.end->vall.num == SYM_CLN))
-                        cmperr(NOTERMN, exp.end, nil);
-
+                    hasscolon(exp);
                     tok = exp.end;
                 // otherwise is not
                 } else cmperr(ALONEXP, tok->last, nil);
@@ -383,11 +476,15 @@ astt parse(tkn * tkns, cmod mode){
 
             // statements
             case KEYWORD:
-                if(tok->vall.num == KW_AUTO){
+                if(tok->vall.num == KW_AUTO
+                or tok->vall.num == KW_PNTR
+                or tok->vall.num == KW_CHAR){
                     rulr def = define_r(tok, F);
 
                     ctxt.ctxt[ctxt.clen] = def.out;
                     ctxt.clen++;
+
+                    hasscolon(def);
                     tok = def.end;
                 }
             default: break;

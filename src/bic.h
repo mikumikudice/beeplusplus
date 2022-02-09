@@ -17,9 +17,9 @@ imut char KEYWORDS[][8] = {
     "if"   , "elif" , "else" ,
     "for"  , "goto" , "break",
     "extrn", "auto" , "char" , "pntr",
-    "dist" ,
+    "dist" , "from" ,
 
-    "length", "typeof", "sizeof",
+    "typeof", "sizeof", "getval",
     "struct", "switch", "return",
 };
 enum {
@@ -167,6 +167,7 @@ struct token {
     aori vall;
     tknt type;
     u64  line, coll; // I know it's column but coll fits better
+    u64  tabl;
     tkn *next,*last;
 };
 // apndx data
@@ -188,15 +189,14 @@ tkn * EOTT = &__EOTT;
 *  be of the type UNKNOWN, so we  *
 \* can use this value again.     */
 typedef enum formal_lang_rule {
-    CONSTD = UNKNOWN, // constant definition
-    DEFINE,  ASSIGN , // variable definition
-    ARRDEF,  STTDEF , // objects  definition
-    ENUMDF,  STRUCT , // typedef rules
-    STTMNT,  EXPRSS , // evaluatable bodies
-    LABELD,  JMPSTT , // goto statements
-    FUNDEF,  FNCALL , // functions
-    BODYDF,           // code scope definition
-    EOLINE,
+    CONSTD = UNKNOWN,         // constant definition
+    DEFINE,  ASSIGN ,         // variable definition
+    ARRDEF,  STTDEF ,         // objects  definition
+    ENUMDF,  STRUCT ,         // typedef rules
+    STTMNT,  EXPRSS ,         // evaluatable bodies
+    LABELD,  JMPSTT ,         // goto statements
+    FUNDEF,  FNCALL , ARGDEF, // functions
+    BODYDF,                   // code scope definition
 } rule_t;
 
 typedef struct ast_node {
@@ -268,6 +268,7 @@ tkn * lexit();
 char * get_tokval(tkn * tok);
 
 tkn * matchpair(tkn * c);
+void  hasscolon(rulr out);
 
 // parser rules
 rulr constd_r(tkn * c, bool jchk);

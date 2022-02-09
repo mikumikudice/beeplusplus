@@ -63,6 +63,9 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     // init first line
     code.arr[code.len] = malloc(LSIZE);
 
+    tkn arw;
+    bool err = F;
+
     for(char c; (c = fgetc(fptr));){
         // skip non textual chars
         if(c < 9 and c >= 0) continue;
@@ -120,37 +123,38 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
         if(c != '\n' and c != EOF){
             if(!iscmt){
                 code.arr[code.len][i++] = c;
+                if(err) goto skip;
 
                 // when coming back to check symbol, skip it
                 if(last != c){
                     // take care of parenthesis and scopes
                     if(c == '{' and !isstr){
                         isscp = T;
-                        lscp[plvl][0] = l;
-                        lscp[plvl][1] = c;
+                        lscp[plvl][0] = code.len;
+                        lscp[plvl][1] = i - 1;
                         slvl++;
                     }
                     else if(c == '}' and !isstr){
                         slvl--;
                         if(!slvl) isscp = F;
-                        else if(plvl < 0){
-                            tkn this = {.line = l, .coll = c};
-                            cmperr(UNEXPCT, &this, nil);
+                        else if(slvl < 0){
+                            arw = (tkn){.line = code.len, .coll = i - 1};
+                            err = T;
                         }
                     }
 
                     else if(c == '(' and !isstr){
                         ispar = T;
-                        lpar[plvl][0] = l;
-                        lpar[plvl][1] = c;
+                        lpar[plvl][0] = code.len;
+                        lpar[plvl][1] = i - 1;
                         plvl++;
                     }
                     else if(c == ')' and !isstr){
                         plvl--;
                         if(!plvl) ispar = F;
                         else if(plvl < 0){
-                            tkn this = {.line = l, .coll = c};
-                            cmperr(UNEXPCT, &this, nil);
+                            arw = (tkn){.line = code.len, .coll = i - 1};
+                            err = T;
                         }
                     }
                 }
@@ -158,12 +162,15 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
                 strcpy(code.arr[code.len], "");
                 i = 0;
             }
+            skip:
             last = c;
         // reached end of line
         } else {
-            if(!iscmt){
-                code.arr[code.len][i] = '\0';
+            code.arr[code.len][i] = '\0';
+            // catch the error at the end of the line
+            if(err) cmperr(UNEXPCT, &arw, nil);
 
+            if(!iscmt){
                 // check it here to avoid
                 // skipping the last char
                 if(c == EOF){
@@ -212,8 +219,7 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
             .vall.str = "previously started here"
         };
         cmperr(UNCBRCK, &tmp, &cmp);
-    }
-    else if(ispar){
+    } else if(ispar){
         tkn tmp = {
             .line = code.len - 1,
             .coll = strlen(code.arr[code.len - 1]) - 1
@@ -223,9 +229,9 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
             .coll = lpar[plvl - 1][1],
             .vall.str = "previously started here"
         };
+        printf("%d %d %d\n", plvl, plvl - 1, lpar[plvl - 1][1]);
         cmperr(UNCPARN, &tmp, &cmp);
     }
-
 
     COL(GRN);
     puts("+lexing code   ...");
@@ -280,7 +286,7 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
 
     // compilation time
     crnt = clock();
-    f32 dt = ((double)(crnt - oldt)) / (double)(CLOCKS_PER_SEC);
+    f32 dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
 
     printf("-compiled %s into %s in ", lddf, out->outn);
     COL(GRN);
@@ -310,7 +316,7 @@ void cmperr(imut char * err, tkn * arw, tkn * cmpl){
         fflush(stderr);
 
         fprintf(stderr, RED);
-        for(u16 i = 0; i < arw->coll + strlen(stt) - 1; i++){
+        for(u16 i = 0; i < arw->coll + strlen(stt) - 2; i++){
             if(i > 3) fprintf(stderr, "~");
             else fprintf(stderr, " ");
         }
@@ -328,9 +334,11 @@ void cmperr(imut char * err, tkn * arw, tkn * cmpl){
         fprintf(stderr, " at %ld:%ld:\n",
         cmpl->line + 1, cmpl->coll + 1);
 
+        char stt[csz];
+        sprintf(stt, "\n\t%ld | ", cmpl->line + 1);
+
         fprintf(stderr, BLU);
-        fprintf(stderr, "\n\t%ld | %s\n\t",
-        cmpl->line + 1, code.arr[cmpl->line]);
+        fprintf(stderr, "%s%s\n\t", stt, code.arr[cmpl->line]);
         fprintf(stderr, DEF);
         fflush(stderr);
 

@@ -1,14 +1,14 @@
 #define rustt
-#define u16 unsigned short int
-#define u32 unsigned int
-#define u64 unsigned long int
+typedef unsigned short int u16;
+typedef unsigned int       u32;
+typedef unsigned long int  u64;
 
-#define i16 short int
-#define i32 int
-#define i64 long int
+typedef short int i16;
+typedef int       i32;
+typedef long int  i64;
 
-#define f16 float
-#define f32 double
+typedef float  f32;
+typedef double f64;
 
 #define imut const
-#define emut static
+#define cnst static
