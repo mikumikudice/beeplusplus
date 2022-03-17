@@ -140,12 +140,15 @@ tkn * lexit(){
         strcpy(src, code.arr[l]);
 
         bool isstr = F; // is the current sentence a string?
-        u64  ctp   = 0; // current token's pointer
+        i64  ctc   = 0; // current token's character
         char ctkn[lsz];
 
         for(u64 c = 0; c < lsz; c++){
+
             // it's a token letter, just append
-            if(validn(src[c])) ctkn[ctp++] = src[c];
+            if(validn(src[c])){
+                ctkn[ctc++] = src[c];
+            }
             // do something now
             else {
                 tkn this; // the next token
@@ -192,22 +195,26 @@ tkn * lexit(){
                             this.vall.num = strtoptr(dummy);
                             this.apdx = STRING_L;
                         }
-                        ctp = 0;
+                        ctc = 0;
                         goto finish;
                     }
                     // keep storing
-                    else if(issc) ctkn[ctp++] = src[c];
+                    else if(issc) ctkn[ctc++] = src[c];
                     continue;
                 }
                 // keep storing
                 else if(isstr){
-                    ctkn[ctp++] = src[c];
+                    ctkn[ctc++] = src[c];
                     continue;
                 }
                 // keyword, index or literal
-                else if(ctp > 0){
+                else if(ctc > 0){
                     // just close the buffer
-                    ctkn[ctp] = '\0';
+                    ctkn[ctc] = '\0';
+
+                    // resset the current token
+                    // pointer to the beginning
+                    ctc = 0;
 
                     i16 idx = iskeyw(ctkn);
 
@@ -223,7 +230,7 @@ tkn * lexit(){
 
                         hashexpr = startswith(ctkn, "0x");
                         hasbinpr = startswith(ctkn, "0b");
-                        hasoctpr = startswith(ctkn, "0");
+                        hasoctpr = startswith(ctkn, "0o");
 
                         // validate the literals
 
@@ -334,10 +341,6 @@ tkn * lexit(){
                         // mark it as freeable
                         this.apdx = FREEABLE;
                     }
-                    // resset the current token
-                    // pointer to the beginning
-                    ctp = 0;
-
                     // decrement it if the
                     // current char may be 
                     // a symbol
