@@ -5,19 +5,19 @@
 #define assert(check, msg)\
     if(!(check)){\
         fprintf(stderr, RED);\
-        fprintf(stderr, "[ERROR]");\
+        fprintf(stderr, "[ERROR]:");\
         fprintf(stderr, DEF);\
-        if(msg) fprintf(stderr, ": %s at %d in %s\n", msg, __LINE__, __FILE__);\
-        else fprintf(stderr, ": %s failed at %d in %s\n", #check, __LINE__, __FILE__);\
+        if(msg) fprintf(stderr, " `%s` falied! %s at %s#%d\n", #check, msg, __FILE__, __LINE__);\
+        else fprintf(stderr, " `%s` failed at %s#%d\n", #check, __FILE__, __LINE__);\
         exit(-1);\
     }
 
 // list of the reserved keywords
 imut char KEYWORDS[][8] = {
     "if"   , "elif" , "else" ,
-    "for"  , "goto" , "break",
+    "for"  , "goto" , "break", "next",
     "extrn", "auto" , "char" , "pntr",
-    "dist" , "from" ,
+    "dist" , "from" , "in"   ,
 
     "typeof", "sizeof", "getval",
     "struct", "switch", "return",
@@ -28,55 +28,42 @@ enum {
     KW_EXTRN, KW_AUTO , KW_CHAR , KW_PNTR,
     KW_DIST ,
 
-    KW_LENGTH, KW_KINDOF, KW_SIZEOF,
+    KW_TYPEOF, KW_SIZEOF, KW_GETVAL,
     KW_STRUCT, KW_SWITCH, KW_RETURN,
 };
+u16 ldef[2] = {07,  9}; // local var's definition keywords
+u16 sttt[2] = {00, 03}; // statement keywords
+u16 funl[2] = {11, 13}; // function-like keywords
 
 // list of operators
 imut char OPERATORS[][4] = {
-    // equality and assignment operators
-    "="  , "==" ,
-    "!"  , "!=" ,
-    "<"  , "<=" ,
-    ">"  , ">=" ,
+    // assignment operators
+    "="  , "+=", "-=", "*=" , "/=" , "%=",
+    "~=" , "|=", "&=", ">>=", "<<=",
+    // equality operators
+    "==" , "!=", "<" , ">"  , "<=" , ">=",
 
     // arithmetic operators
-    "+"  , "+=" ,
-    "-"  , "-=" ,
-    "*"  , "*=" ,
-    "/"  , "/=" ,
-    "%"  , "%=" ,
+    "*"  , "/" , "%" , "+"  , "-"  ,
+    // bitwise operators
+    "~"  , "|" , "&" , ">>" , "<<" ,
 
     // boolean operators
-    "not", "and", "or",
-
-    // bitwise operators
-    "~"  , "~=" , // not / xor
-    "|"  , "|=" , // or
-    "&"  , "&=" , // and / adr
-    ">>" , ">>=", // left shift
-    "<<" , "<<=", // right shift
+    "and", "or", "not",
 
     // miscellaneous
     "^"  ,        // pointer operator
-    ":"           // label operator
+    ":"  ,        // label operator
+    ".."          // range operator
 };
 
-// is this operator unary?
-#define is_unr_opr(opr)\
-(opr == 2 or opr == 8 or opr == 10 or opr == 21 or opr == 25 or opr == 31)
-
-// is this an assignment operator?
-#define is_ass_opr(opr)\
-(opr == 0 or (opr % 2 == 1 and opr < 18 and opr > 7) or (opr % 2 == 0 and opr > 20))
-
-// is this an equality operator?
-#define is_eql_opr(opr)\
-(opr % 2 == 1 and opr < 8)
-
-// is this operator boolean?
-#define is_bln_opr(opr)\
-(opr > 17 and opr < 21)
+imut u16 OPR_LEN = arrlen(OPERATORS);
+u16 asgn[2] = {0 , 10}; // assignment operators
+u16 eqlt[2] = {11, 16}; // equality operators
+u16 arth[2] = {17, 21}; // arithmetic operators
+u16 unry[2] = {20, 22}; // unary operators
+u16 btws[2] = {22, 26}; // bitwise operators
+u16 blan[2] = {27, 29}; // boolean operators
 
 typedef struct string_array {
     char ** arr;
@@ -104,10 +91,10 @@ imut ptrn SYMBOLS[] = {
     (ptrn){.s = "(" , .e = ")" }, // call/exp
     (ptrn){.s = "{" , .e = "}" }, // scope
     (ptrn){.s = "[" , .e = "]" }, // indexing
-    (ptrn){.s = nil , .e = "." }, // dot
-    (ptrn){.s = nil , .e = "," }, // comma
-    (ptrn){.s = nil , .e = ";" }, // semicolon
-    (ptrn){.s = nil , .e = "//"}, // comments
+    (ptrn){.s = "." , .e = nil }, // dot
+    (ptrn){.s = "," , .e = nil }, // comma
+    (ptrn){.s = ";" , .e = nil }, // semicolon
+    (ptrn){.s = "//", .e = nil }, // comments
     (ptrn){.s = "/*", .e = "*/"}, // ...
 };
 enum {
@@ -156,7 +143,7 @@ typedef enum token_t {
 \* code positioning (line and coll) */
 
 typedef union string_or_int {
-    char * str; // string for literals and indexes
+    char * str; // string for literals and indexers
     u16    num; // number to keywords and operators (pointers)
 } aori;
 
@@ -167,7 +154,6 @@ struct token {
     aori vall;
     tknt type;
     u64  line, coll; // I know it's column but coll fits better
-    u64  tabl;
     tkn *next,*last;
 };
 // apndx data
@@ -177,7 +163,7 @@ enum {
 
 // when tkn::next points to EOTT the token tree
 // is over. EOTT also holds the first token
-tkn __EOTT = {};
+tkn __EOTT = {.type = UNKNOWN};
 tkn * EOTT = &__EOTT;
 
 /* formal Language rules         *\
@@ -197,37 +183,39 @@ typedef enum formal_lang_rule {
     LABELD,  JMPSTT ,         // goto statements
     FUNDEF,  FNCALL , ARGDEF, // functions
     BODYDF,                   // code scope definition
+    CODEIS                    // representative value (code itself)
 } rule_t;
 
-typedef struct ast_node {
-    tkn * strt;   // code path pointer
-    tkn * end_of; // end of code path
-    u16 * path;   // code path represented as types (rule_t + token_t)
-    u16   path_t; // the node type
-} node;
+/* Abstract Syntax Tree node            *\
+*  ====================================  *
+*  this type holds the entire code as a  *
+*  linked list of nodes. Each node is a  *
+*  hotpath like a statement or variable  *
+*  assignment. It was implemented as so  *
+*  because it's easier to add or remove  *
+*  nodes from it without reallocing it.  *
+\*                                      */
+typedef struct ast_node node;
+struct ast_node {
+    node *last, *next;
+    u16   vall;
+    aori  itsf;
+};
+typedef struct ast_t astt;
 
-/* ruler output                *\
-*  ===========================  *
-*  `node` holds the code path,  *
-*  and `end` points to the end  *
-*  of the evaluated code path.  *
-*  when no node is needed it's  *
-*  cheaper send just the token  *
-*  as a pointer rather than an  *
-*  entire node just for it.     *
-\*                             */
-typedef struct ruler_out {
-    node * out;
-    tkn  * end;
-} rulr;
+struct ast_t {
+    tkn * strt;        // code path pointer
+    tkn * endo;        // end of code path
+    node *pstt, *pend; // the code path
+};
 
-typedef struct ast_t {
-    node **ctxt; // ast context
-    u64    clen; // context length
-} astt;
+// when node::next points to EOAST the AST is
+// over. EOAST also holds the first AST node.
+astt __EOAST = {};
+astt * EOAST = &__EOAST;
 
 #define grow_ast(ctxt) \
-    ctxt->ctxt = realloc(ctxt->ctxt, ((ctxt->clen++) + 1) * sizeof(node))
+    ctxt->ctxt = realloc(ctxt->ctxt, ((ctxt->clen++) + 1) * sizeof(astt))
 
 #define pushnode(p, c, t, ctxt)\
     ctxt->ctxt[ctxt->clen].strt = p;\
@@ -253,7 +241,7 @@ typedef struct cout {
 } cout;
 
 typedef enum comp_mode {
-    CHECK, DEBUG, BUILD
+    CHECK, DEBUG, BUILD, SCOPE
 } cmod;
 
 /* compiler                      *\
@@ -268,33 +256,26 @@ tkn * lexit();
 char * get_tokval(tkn * tok);
 
 tkn * matchpair(tkn * c);
-void  hasscolon(rulr out);
+void  hasscolon(astt * out);
 
 // parser rules
-rulr constd_r(tkn * c, bool jchk);
-rulr define_r(tkn * c, bool jchk);
-rulr assign_r(tkn * c, bool jchk);
-
-rulr sttdef_r(tkn * c, bool jchk);
-rulr enumdf_r(tkn * c, bool jchk);
-rulr struct_r(tkn * c, bool jchk);
-rulr arrdef_r(tkn * c, bool jchk);
-
-rulr sttmnt_r(tkn * c, bool jchk);
-rulr exprss_r(tkn * c, bool jchk, bool prnd);
-
-rulr fun_def_r(tkn * c, bool jchk);
-rulr funcall_r(tkn * c, bool jchk);
-
-rulr labeldf_r(tkn * c, bool jchk);
-rulr jmp_stt_r(tkn * c, bool jchk);
-
-rulr bodydef_r(tkn * c, bool jchk);
-
-astt *flush_ast(astt * ctxt, u64 i, u64 f);
+astt * constd_r(tkn * c);
+astt * define_r(tkn * c);
+astt * assign_r(tkn * c, bool prnd);
+astt * strdef_r(tkn * c);
+astt * enumdf_r(tkn * c);
+astt * struct_r(tkn * c);
+astt * arrdef_r(tkn * c);
+astt * sttmnt_r(tkn * c);
+astt * exprss_r(tkn * c, bool prnd);
+astt *fun_def_r(tkn * c);
+astt *funcall_r(tkn * c);
+astt *labeldf_r(tkn * c);
+astt *jmp_stt_r(tkn * c);
+astt *bodydef_r(tkn * c);
 
 // parser
-astt parse(tkn * tkns, cmod mode);
+astt * parse(tkn * tkns, cmod mode);
 
 bool isnumc(char chr);
 bool ishexc(char chr);
@@ -311,6 +292,8 @@ u64 upow(u64 b, u64 p);
 char * strtohex(char * str);
 u16    strtoptr(char * str);
 void   free_str();
+
+char * nodet_to_str(node * n);
 
 // compilation error
 void cmperr(imut char * err, tkn * arw, tkn * cmpl);

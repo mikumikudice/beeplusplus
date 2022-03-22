@@ -69,6 +69,79 @@ u64 upow(u64 b, u64 p){
     return out;
 }
 
+char * nodet_to_str(node * n){
+    char * out = malloc(512);
+    strcpy(out, "");
+    switch(n->vall){ 
+        case KEYWORD :
+            sprintf(out, "KEYWORD %s\n", KEYWORDS[n->itsf.num]);
+            break;
+        case INDEXER :
+            sprintf(out, "INDEXER %s\n", n->itsf.str);
+            break;
+        case LITERAL :
+            sprintf(out, "LITERAL %s\n", n->itsf.str);
+            break;
+        case LSYMBOL :
+            sprintf(out, "LSYMBOL %s\n", SYMBOLS[n->itsf.num].s);
+            break;
+        case OPERATOR:
+            sprintf(out, "OPERATOR %s\n", OPERATORS[n->itsf.num]);
+            break;
+        case CONSTD  :
+            strcpy(out, "CONSTD\n");
+        case DEFINE  :
+            sprintf(out, "DEFINE %s\n", KEYWORDS[n->itsf.num]);
+            break;
+        case ASSIGN  :
+            sprintf(out, "ASSIGN %s\n", n->itsf.str);
+            break;
+        case ARRDEF  :
+            // TODO
+            break;
+        case STTDEF  :
+            // TODO
+            break;
+        case ENUMDF  :
+            // TODO
+            break;
+        case STRUCT  :
+            // TODO
+            break;
+        case STTMNT  :
+            // TODO
+            break;
+        case EXPRSS  :
+            strcpy(out, "EXPRSS\n");
+            break;
+        case LABELD  :
+            // TODO
+            break;
+        case JMPSTT  :
+            // TODO
+            break;
+        case FUNDEF  :
+            sprintf(out, "FUNDEF %s\n", n->itsf.str);
+            break;
+        case FNCALL  :
+            sprintf(out, "FNCALL %s\n", n->itsf.str);
+            break;
+        case ARGDEF  :
+            strcpy(out, "ARGDEF\n");
+            break;
+        case BODYDF  :
+            strcpy(out, "BODYDF\n");
+            break;
+        case CODEIS  :
+            strcpy(out, "BEGIN\n");
+            break;
+        default:
+            sprintf(out, "UNKNOWN [%d]\n", n->vall);
+            break;
+    }
+    return out;
+}
+
 char * strtohex(char * data){
     // avoid too many calls
     u16 len = arrlen(metachar);
@@ -130,7 +203,6 @@ tkn * lexit(){
 
     // current line
     for(u64 l = 0; l < code.len; l++){
-        u64 col = 0;                   // last token's column
         u64 lsz = strlen(code.arr[l]); // line length
 
         // skip comment lines
@@ -154,7 +226,7 @@ tkn * lexit(){
                 tkn this; // the next token
 
                 this.type = UNKNOWN;
-                this.coll = col;
+                this.coll = ctc > 0 ? c - 1 : c;
                 this.line = l;
 
                 // ignore strings
@@ -352,12 +424,12 @@ tkn * lexit(){
                     // compare with the known symbols
                     for(u16 s = 0; s < alen; s++){
                         // not all symbols are in pairs
-                        if(SYMBOLS[s].s){
+                        if(SYMBOLS[s].e){
                             // set token to the same
                             // slice size of the sym
                             char t[alen + 1];
                             // avoid multiple calls
-                            u16 len = strlen(SYMBOLS[s].s);
+                            u16 len = strlen(SYMBOLS[s].e);
 
                             // append missing chars
                             for(u16 chr = c; chr < c + len and chr < lsz; chr++){
@@ -365,17 +437,17 @@ tkn * lexit(){
                             }
                             t[len] = '\0';
 
-                            if(!strcmp(SYMBOLS[s].s, t)){
+                            if(!strcmp(SYMBOLS[s].e, t)){
                                 this.vall.num = s;
                                 this.type = LSYMBOL;
-                                this.apdx = 0;
+                                this.apdx = 1;
 
                                 c += len - 1;
                                 break;
                             }
                         }
                         // same of the last statement
-                        u16 len = strlen(SYMBOLS[s].e);
+                        u16 len = strlen(SYMBOLS[s].s);
                         char t[len + 1];
 
                         for(u16 chr = c; chr < c + len and chr < lsz; chr++){
@@ -383,10 +455,10 @@ tkn * lexit(){
                         }
                         t[len] = '\0';
 
-                        if(!strcmp(SYMBOLS[s].e, t)){
+                        if(!strcmp(SYMBOLS[s].s, t)){
                             this.vall.num = s;
                             this.type = LSYMBOL;
-                            this.apdx = 1;
+                            this.apdx = 0;
 
                             c += len - 1;
                             break;
@@ -394,7 +466,7 @@ tkn * lexit(){
                     }
                     if(this.type != UNKNOWN) goto finish;
 
-                    u16 mlen; // matched len
+                    u16 mlen = 0; // matched len
                     alen = arrlen(OPERATORS);
                     // compare with the known operators
                     for(u16 o = 0; o < alen; o++){
@@ -414,7 +486,7 @@ tkn * lexit(){
                         // may occur some mismatches like
                         // =< being read as =, so keep it
                         // going until the end
-                        if(!strcmp(OPERATORS[o], t)){
+                        if(!strcmp(OPERATORS[o], t) and len > mlen){
                             this.vall.num = o;
                             this.type = OPERATOR;
                             mlen = len;
@@ -427,8 +499,8 @@ tkn * lexit(){
                 } else continue;
 
                 finish:
-                if(this.type != UNKNOWN) col = c + 1;
-                else cmperr(UNEXPCT, &this, nil);
+                if(this.type == UNKNOWN)
+                    cmperr(UNEXPCT, &this, nil);
 
                 // store the previous token on the current
                 this.last = *lst;

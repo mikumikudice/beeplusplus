@@ -8,6 +8,7 @@ imut char * UNCLSTR = "unclosed string found here";
 imut char * UNCCMMT = "unclosed multiline comment found here";
 imut char * UNCBRCK = "unclosed bracket found here";
 imut char * UNCPARN = "unclosed parentheses found here";
+imut char * EXPCTDP = "expected a parentheses at the end of this expression";
 imut char * PRVONHR = "previously opened here";
 imut char * ALONEXP = "expression out of context found here";
 imut char * CALLERR = "attempt to call an undefined function";
@@ -16,6 +17,11 @@ imut char * TOOMUCH = "too much arguments in the statement";
 imut char * MULTIDF = "attempt to define multiple times the same namespace";
 imut char * LITRIDX = "attempt to use a literal as namespace";
 imut char * KWRDIDX = "attempt to use a keyword as namespace";
+imut char * KWRDVAL = "attempt to use a keyword as value";
+imut char * EXPCTEX = "expected expression at this point";
+imut char * DEFWOEQ = "you cannot assign a variable with shorthand operators while defining it";
+imut char * NOTASGN = "this is not a valid assignment operator";
+imut char * MSMATCH = "mismatch of number of assignators and assignateds in expression";
 imut char * NOTERMN = "no terminator at the end of the line";
 
 // array of source code lines
@@ -31,12 +37,12 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     out->outn  = strgsub(dummy, ".bi", "");
 
     // compiling timer
-    clock_t crnt, oldt;
-    oldt = clock();
+    clock_t crnt, oldt = clock();
+    f32 dt;
 
     code.arr = malloc(sizeof(char *));
     COL(GRN);
-    puts("+loading code  ...");
+    printf("+loading code  ...");
     COL(DEF);
 
     char l = 0, o = 0;
@@ -233,14 +239,22 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
         cmperr(UNCPARN, &tmp, &cmp);
     }
 
+    crnt = clock();
+    dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
+    printf(" done in %.5fs\n", dt);
+
     COL(GRN);
-    puts("+lexing code   ...");
+    printf("+lexing code   ...");
     COL(DEF);
 
     tkn * tkns = lexit();
 
+    crnt = clock();
+    dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
+    printf(" done in %.5fs\n", dt);
+
     COL(GRN);
-    puts("+parsing code  ...");
+    printf("+parsing code  ...");
     COL(DEF);
 
     cmod cmd;
@@ -249,8 +263,12 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     else cmd = BUILD;
 
     // basic ast
-    astt bast = parse(tkns, cmd);
+    astt * bast = parse(tkns, cmd);
     if(cmd == CHECK) goto skip_cmp;
+
+    crnt = clock();
+    dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
+    printf(" done in %.5fs\n", dt);
 
     // TODO: final ast gen
     if(cmd == DEBUG) goto skip_opt;
@@ -259,6 +277,30 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     // TODO: nasm gen
 
     skip_cmp:
+    
+    char * prnt;
+    node * this = bast->pstt;
+    while (T){
+        prnt = nodet_to_str(this);
+        printf("%s\n", prnt);
+        free(prnt);
+        if(this == bast->pend) break;
+        this = this->next;
+    }
+
+    // free basic ast
+    node * pntr = bast->pstt,
+         * temp;
+    u16 idx = 0;
+    while(pntr != bast->pend){
+       temp = pntr;
+       pntr = temp->next;
+       free(temp);
+    }
+    free(bast->pend);
+    free(bast);
+    free_str();
+
     tkn * tok, * old = nil;
     i64   cnt = EOTT->apdx;
     // free tokens
@@ -276,17 +318,9 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     }
     free(old);
 
-    // free basic ast
-    for(u64 n = 0; n < bast.clen; n++){
-        free(bast.ctxt[n]->path);
-        free(bast.ctxt[n]);
-    }
-    free(bast.ctxt);
-    free_str();
-
     // compilation time
     crnt = clock();
-    f32 dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
+    dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
 
     printf("-compiled %s into %s in ", lddf, out->outn);
     COL(GRN);
@@ -297,6 +331,9 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
 }
 
 void cmperr(imut char * err, tkn * arw, tkn * cmpl){
+    // flush compilation messages
+    printf("\n\n");
+
     // common prefix
     fprintf(stderr, RED);
     fprintf(stderr, "[ERROR]");
