@@ -27,16 +27,20 @@ enum {
 printf("today is %d*n", firsday)
 ```
 
-Fixed that old and bothering problem fixed by C, but better. I mean the `+=` operator. B used to type `x =+ 4` to sum `4` to `x`, thing that C fixed, using `x += 4` to express it. B++ also does it, after all, no one will try to compile an original B code from the 70's.
+Fixed that old and bothering problem, the `+=` operator. B used to type `x =+ 4` to sum `4` to `x`, we fixed it just like C, now to write the equivalent to this you need to use the `+=` operator.
 
-Some life quality improvements that [leushenko's](https://github.com/Leushenko/ybc) version of B brings, such as short functions, no need to use `extrn` to just invoke functions, etc.
+Some life quality improvements that [leushenko's](https://github.com/Leushenko/ybc) version of B brings, such as short functions and no need to redefine extern functions on every local function.
 ```c
+extrn printf;
+
 sum(x, y) x + y; // returns x + y
 
 main(){
-    printf("%d\n", sum(8, 234)); // prints 242
+    extrn sum; // sum is local, so you need to redefine
+    printf("%d\n", sum(8, 234)); // printf is global, no need to redefine; prints 242
 };
 ```
+
 Also single line multiple assignment, like:
 ```c
 auto x, y, z = 4, 5, 6;
