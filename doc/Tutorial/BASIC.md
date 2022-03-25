@@ -2,7 +2,10 @@
 With this you'll learn how to get started. If you are really interested to know all the main features, you can read the [intermediary](INTERMEDIARY.md) tutorial. After that, when you get used to the lang, you can check the [advanced](ADVANCED.md) tutorial to learn some lit stuff like really low level things.
 
 ## The common place
-The things you already know.
+The things you may already know.
+
+## Disclaimer
+You'll see several times functions like `putc`, `getc`, `puts`. All those need to be included in your file when writing in real world (see [external code](#External-code) for further explanation). But for reasons of simplicity and didactic, we omitted the external requirement code.
 
 ### Hello world
 Like, C, but **B**etter.
@@ -11,27 +14,28 @@ main(){
     putc('hi!*n');
 };
 ```
+
 Note that:
 * scape char is star (`*`).<br/>
 * the function scope ends with a semicolon (`;`).<br/>
 * the literal `'hi!*n'` is a _char_ literal, not an string.<br/>
 
 ### Comments
-Single lined and multilined comments.
-```c
+Single lined and multi-lined comments.
+```pony
 // hello
 auto foo = 5;
 /*
     Oh, hello there!
     Nice to meet you
     /*
-        nested blocks works too (please ignore
-        the fact that in markdown it does not)
+        nested blocks works too. Yay!
     */
 */
 ```
+
 ### Types definition
-There is tree types in B, that all are subsets of each other. They are `char` (double word), `pntr` (also double word) and `auto` (32 bits). You can assign a `char` to `auto`, but not the opposite. A `pntr` can only be assigned by an address (`&char` or `&auto`) or by another pointer. `char` can only be assigned with literals or another `char`. You can also make arrays (both C-like and modern ones) of these types.
+There is tree types in B, that all are subsets of each other. All of them 32 bits (double word) They are `char`, `pntr` (pointer) and `auto` (integer). You can assign a `char` to `auto`, but not the opposite. A `pntr` can only be assigned by an address (`&char`, `&auto` or `&pntr`) or by another pointer. And finally, `char` can only be assigned with literals or another `char`. You can also make arrays (both C-like and modern ones) of these types.
 ```
 char _hi = 'hi!';
 auto foo, bar = 4, 5; // multiple assignments are also valid
@@ -46,36 +50,41 @@ the^ = _hi; // ok
 the = bar; // not allowed too
 the = a145b6h; // what the heck, extremely prohibited!
 ```
+
 Note that:
-* pointers can be not be initialized on declaration, but it may not be used before initializing. This is ensured at compile-time. The default value of pointers is `nil`. See [Pointers](BASIC.md#pointers) for further explanation.<br/>
+* pointers don't have to be initialized on declaration, but they may not be used before initializing. This is ensured at compile-time. The default value of pointers is `nil`. See [Pointers](BASIC.md#pointers) for further explanation.<br/>
 * there is no arithmetic with default pointers.<br/>
 
 ### Arrays
-Just as was said, there are C-like arrays (that also works as C-like strings) and modern arrays, with length and capacity. These are also used as modern strings. Actually, the modern arrays are structures behind-the-scenes. This is how you use them.
+The default array in B++, that you may be using most, is a record of data of the same type. You can gather a couple of variables together in a single namespace, accessing them by index, like that:
 ```
 auto [4]nums = {2, 3, 5, 7, 11};                         // default arrays
-char [^]pron = {'you', 'he', 'she', 'it', 'we', 'they'}; // c-like arrays
 
-auto spam = nums[4]; // valid
-pron[2] = 'his';     // valid
+auto spam = nums[4];     // valid
+nums[5] = 13;            // invalid. write out of bounds
+nums[nums[3]] = 16;      // invalid too
+nums[nums.len - 1] = 13; // you also can access it's length
+```
 
-nums[5] = 13;      // invalid. write out of scope
-pron[0] = 'yours'; // invalid. 'yours' is 5 bytes wide, it "fiting" in the total memory chunk, it's not allowed
+You may also want to use sometimes C-like arrays, that are "pointers for multiple items". You should not use that unless you are dealing with C code or low level stuff, but if you really need to, here's how:
+```c
+auto [^]fibonacci = {0, 1, 1, 2, 3, 5, 8};
 
-pron[nums[3]] = 'your'; // invalid, index out of bounds
-pntr myarr = &pron;     // invalid, because pron is already an pointer
+fibonacci = fibonacci[1]; // valid, but please avoid that
+fibonacci[3] = 4;         // naturally valid
+fibonacci[6] = 13;        // invalid. write out of bounds
+                          // (this kind of thing may happen in release mode, but not in debug)
 ```
 
 Note that:
 * there is no dynamic arrays by default.<br/>
 * the size of c-like arrays are deduced by the assignment, therefore, can't be defined without initialization.<br/>
-* only default arrays has the fields `len` and `cap`, because these are inplemented as structures.<br/>
-* you can get the address of default pointers, but not of c-like arrays.<br/>
+* only default arrays has the `len` field, because these are implemented as structures behind-the-scenes.<br/>
 
 ### Structures
-Structures are like arrays, but the items are indexed by name, can have default values, and may be of different types. But even the array and structure indexing being by offseting the memory address by the index (is the index a literal number or the field name as an offset too), you can't index an structure as you do with arrays, because it can lead to segfaults or memory corruption, which is bad. This is how you can use structures in B++:
+Structures are like arrays, but the items are indexed by name, can have default values, and may be of different types. Being so, you can also address an structure with numeric indexes instead of fields. It's not usual, but possible. This is how you can use structures in B++:
 ```c
-struct string {
+struct string { // no typedef, because there are no user types
     pntr val;
     auto len, cap;
 };
@@ -83,58 +92,24 @@ struct string {
 pntr foo = string{"hello", 5, 6};
 foo.val[5] = '!';
 
-printf("%s*n", foo.val);
+printf("%a*n", foo.val);
 ```
 
 Also, you can use a simple sugar code to access the field `val` of any structure by treating it as a simple variable, just like that:
 ```c
+pntr foo = string{.len = 4, .cap = 8};
 foo = "hey!";
 printf("%s*n", foo);
 ```
 
 Note that:
-* `printf` by default treat the corresponding argument to `%s` as a structure.<br/>
-* this kind of special treatment is the only sugar code in B++.
-
-### Enums and distincts
-Distinct values are just like other values when talking about size and arithmetic, but in boolean expressions is when it shines. By turning a constant value you are saying "hey, compiler. Please do not treat this value as a number when comparing to other things. Instead, treat it as a constant token". Fallowing are the uses for this:
-```c
-firsday dist 1;
-...
-sixthday dist 6;
-
-auto today = firsday;
-if today == 1 printf("today is the first day of the week!"); // doesn't print
-elif today == firsday printf("today is firsday!"); // prints normally
-
-if today * 1 == 1 printf("today is the first day of the week!"); // prints too, because 1 * 1 = 1;
-```
-
-Note that:
-* you may noticed two new things, the declaration of variables without any `auto` or something like that, and if/else blocks without parenthesis (also the `elif` keyword). You can check these on [Constants](BASIC.md#Constants) and on [control-structures](BASIC.md#control-structures).<br/>
-* doing mathematics on distinct values works normally, resulting in non distinct values.<br/>
-
-Enums are basically the same thing. Actually, just a short way to define multiple context-related distinct values, just like that:
-```
-enum { // no typedef, it's like normal global values
-    fisday = 1,
-    seconday , thirday ,
-    fourthday, fifthday,
-    sixthday ,
-}
-
-auto today = fourthday;
-printf("today is the %dth day of the week, %s*n", today, today);
-```
-
-Note that:
-* the distinct values, as constant tokens, can be represented as strings using `getval`.
+* `printf` by default treat the corresponding argument to `%s` as a structure. If you're giving and literal string, use the `%a` instead. It stands for ASCII.<br/>
+* this kind of special treatment and the enum sentence are the only code-sugars in B++.
 
 ### Constants
 Constant values are immutable read-only fields that any function can access from inner scopes. To define one, just put the namespace followed by the value, just like that:
 ```c
 myarr {1, 2, 4, 5, 7, 8, 9};
-other 2, 4, 6, 8, 10, 12; // arrays without curly brackets are allowed too
 foo, bar 4, 7; // illegal, no multiple assignment on constants
 
 main (){ // the function syntax is just a constant assignment 
@@ -155,8 +130,42 @@ Note that:
 * functions are pointers and as such you may treat them.<br/>
 * in REAL world, this code would never compile, since it has illegal code, but for didactic reasons let's act as it would do so.<br/>
 
+### Enums and distincts
+Distinct values are just like other values when talking about size and arithmetic, but in boolean expressions is when it shines. By turning a constant value you are saying "hey, compiler. Please do not treat this value as a number when comparing to other things. Instead, treat it as a constant token". Fallowing are the uses for this:
+```c
+firsday dist 1;
+...
+sixthday dist 6;
+
+auto today = firsday;
+if today == 1 puts("today is the first day of the week!"); // doesn't print
+elif today == firsday puts("today is firsday!"); // prints normally
+
+if today * 1 == 1 puts("today is the first day of the week!"); // prints too, because 1 * 1 = 1;
+```
+
+Note that:
+* you may noticed a new thing: the if/else blocks without parenthesis (also the `elif` keyword). You can check these on [control-structures](BASIC.md#control-structures).<br/>
+* doing mathematics on distinct values works normally, resulting in non distinct values.<br/>
+
+Enums are basically the same thing. Actually, just a short way to define multiple context-related distinct values, just like that:
+```
+enum { // no typedef, it's like normal global values
+    firsday = 1,
+    seconday , thirday ,
+    fourthday, fifthday,
+    sixthday ,
+}
+
+auto today = fourthday;
+printf("today is the %dth day of the week, %t*n", today, today);
+```
+
+Note that:
+* the distinct values, as constant tokens, can be represented as strings using `getval`. In this case, it's getting read by the `printf` function by referring to it as `%t`. It stands for "token".
+
 ### Control structures
-Control structures are the way you can make decisions in your program. Simply doing various operations in a row all the way down everytime the return is pressed is really boring. Using `if`s and `for` loops, however, is kinda cool. This is how you can use:
+Control structures are the way you can make decisions in your program. Simply doing various operations in a row all the way down every time the return is pressed is really boring. Using `if`s and `for` loops, however, is kinda cool. This is how you can use:
 
 #### IF-ELIF-ELSE and SWITCH blocks
 ```c
@@ -166,7 +175,7 @@ if(x == 3) printf("true"); // as you may already know
 else printf("false");
 
 if y != x {
-    printf("also true"); // as is suposed to be used
+    printf("also true"); // as is supposed to be used
 
 } else printf("false too"); // `else` is part of the `if` statement
 
@@ -182,17 +191,17 @@ elif x - 2 {x -= 2;} // elif is the unambiguous version of `else if`
 else printf("x is %d*n", x);
 ```
 
-And if you are ~Swedish~ Switish, you can replace the if-else chain with `switch`:
+And if you are ~Swedish~ a Switch enjoyer (not the console), you can replace the if-else chain with `switch`:
 ```c
 auto x = 4;
 switch(x){
-    1: printf("one");
-    2, 3, 5, 7: printf("prime");
-    _: printf("composite");
+    1: puts("one");
+    2, 3, 5, 7: puts("prime");
+    _: puts("composite");
 };
 ```
 Note that:
-* there is no `case` or `default` keywords. Instead, labels defines the cases. The empty case (`_`) replaces the defaut case.<br/>
+* there is no `case` or `default` keywords. Instead, labels defines the cases. The empty case (`_`) replaces the default case.<br/>
 * there is no need to use `break`, because there is no fallthrough. Also, you may have noticed that you can handle multiple cases using commas.<br/>
 * there is the `break` keyword, but it's used in the next section.<br/>
 
@@ -204,7 +213,7 @@ for auto c = 0; c < 256; c += 1 { // just like the c for loop
 };
 ```
 Note that:
-* you may use the `auto` or any other definition keyword when using this mode, because unlike the next one, you can't inferre the type from the value (actually you can, but a good automatic iferrence is hard to implement and sometimes also hard to understand).<br/>
+* you may use the `auto` or any other definition keyword when using this mode, because unlike the next one, you can't infer the type from the value (actually you can, but a good automatic inference is hard to implement and sometimes also hard to understand).<br/>
 
 The interaction mode is this:
 ```c
@@ -227,25 +236,28 @@ for auto n = 1; n < 100; n += 1 {
     if n == 99 break; // stop the loop
 };
 ```
-Editor's note: `next` is superior to `continue` because `next` gives the idea of the next interation, `continue`, in the other hand, gives the idea of simply continue to executing normally, what's counter intuitive.
+Editor's note: `next` is superior to `continue` because `next` gives the idea of the next interaction, `continue`, in the other hand, gives the idea of simply continue to executing normally, what's counter intuitive.
 
 ### Pointers
-Pointers are, as the name sugest and you may know, are a way to access an expecific memory address i.e. a variable value. By geting its address, you can change its value anywere in your code simply by reference. The fallowing is an example on how to use pointers in B++:
+Pointers, as the name suggest and you may know, are a way to access an specific memory address i.e. a variable value. By getting its address, you can change its value anywhere in your code simply by reference. The fallowing is an example on how to use pointers in B++:
 ```c
 auto foo = 4;
 pntr bar = &foo;
 foo = 5;
 
-if(bar^ == foo) printf("true!*n");
-else printf("something's wrong, I can feel it*n");
+if(bar^ == foo) puts("true!");
+else puts("something's wrong, I can feel it");
 
 bar^ = 6;
 
-if(foo == 6) printf("also true!*n");
-else printf("I'm sorry, dave. I'm affraid that it's impossible*n");
+if(foo == 6) puts("also true!");
+else puts("I'm sorry, dave. I'm afraid that it's impossible");
 ```
 
 Note that:
-* A pointer is 8 bytes wide (a qword), the double of the char type (dword / 4 bytes).<br/>
+* if you are a little smart you may have asked "can I pick the address of a pointer?", and the answer is YES!<br/>
 * `nil` is the only built-in dist in B++. See [Enums and distincts](BASIC.md#enums-and-distincts) for more information.<br/>
 * As in Odin, "type on the left, usage on the right", so to access a pointer you use the ``^`` operator on the **right**.
+
+# External-code
+Temere verba Haec verba temere sine causa sunt. Sine ratione aliud esse quam spatium vacuum replere. Hic sistere potes. Abi nunc aliud vide. Ite nunc, ite. Vale.
