@@ -7,7 +7,7 @@
         fprintf(stderr, RED);\
         fprintf(stderr, "[ERROR]:");\
         fprintf(stderr, DEF);\
-        if(msg) fprintf(stderr, " `%s` falied! %s at %s#%d\n", #check, msg, __FILE__, __LINE__);\
+        if(msg) fprintf(stderr, " `%s` failed! %s at %s#%d\n", #check, msg, __FILE__, __LINE__);\
         else fprintf(stderr, " `%s` failed at %s#%d\n", #check, __FILE__, __LINE__);\
         exit(-1);\
     }
@@ -57,7 +57,6 @@ imut char OPERATORS[][4] = {
     ".."          // range operator
 };
 
-imut u16 OPR_LEN = arrlen(OPERATORS);
 u16 asgn[2] = {0 , 10}; // assignment operators
 u16 eqlt[2] = {11, 16}; // equality operators
 u16 arth[2] = {17, 21}; // arithmetic operators
@@ -66,8 +65,9 @@ u16 btws[2] = {22, 26}; // bitwise operators
 u16 blan[2] = {27, 29}; // boolean operators
 
 typedef struct string_array {
-    char ** arr;
-    u64     len;
+    char **arr;
+    u64    len;
+    u64  lgrst; // largest string's size
 } stra;
 
 #define stra_push(a, v) \
@@ -95,7 +95,7 @@ imut ptrn SYMBOLS[] = {
     (ptrn){.s = "," , .e = nil }, // comma
     (ptrn){.s = ";" , .e = nil }, // semicolon
     (ptrn){.s = "//", .e = nil }, // comments
-    (ptrn){.s = "/*", .e = "*/"}, // ...
+    (ptrn){.s = "/*", .e = "*/"},
 };
 enum {
     SYM_PAR, // parentheses
@@ -140,7 +140,7 @@ typedef enum token_t {
 *  ================================  *
 *  a struct that holds a the string  *
 *  literal, its syntax role and its  *
-\* code positioning (line and coll) */
+\* code positioning (line and coln) */
 
 typedef union string_or_int {
     char * str; // string for literals and indexers
@@ -153,37 +153,39 @@ struct token {
     u32  data;
     aori vall;
     tknt type;
-    u64  line, coll; // I know it's column but coll fits better
-    tkn *next,*last;
+    u64  line,  coln;
+    tkn *next, *last;
 };
-// apndx data
+// appendix data
 enum {
     FREEABLE = 1, STRING_L
 };
 
 // when tkn::next points to EOTT the token tree
-// is over. EOTT also holds the first token
-tkn __EOTT = {.type = UNKNOWN};
-tkn * EOTT = &__EOTT;
+// is over. EOTT also holds the first token and
+// last tokens.
+tkn _EOTT = {.type = UNKNOWN};
+tkn *EOTT = &_EOTT;
 
 /* formal Language rules         *\
 *  =============================  *
 *  Represents an evaluated node.  *
 *  It starts at token_t::UNKNOWN  *
 *  because the token after being  *
-*  lexically analized will never  *
+*  lexically analyzed will never  *
 *  be of the type UNKNOWN, so we  *
 \* can use this value again.     */
 typedef enum formal_lang_rule {
     CONSTD = UNKNOWN,         // constant definition
     DEFINE,  ASSIGN ,         // variable definition
-    ARRDEF,  STTDEF ,         // objects  definition
+    ARRDEF,  STRDEF ,         // objects  definition
     ENUMDF,  STRUCT ,         // typedef rules
     STTMNT,  EXPRSS ,         // evaluatable bodies
     LABELD,  JMPSTT ,         // goto statements
-    FUNDEF,  FNCALL , ARGDEF, // functions
-    BODYDF,                   // code scope definition
-    CODEIS                    // representative value (code itself)
+    FUNDEF,  FNCALL ,         // functions
+    ARGDEF,                   // arrays
+    BODYDF,  EOSCPE ,         // code scope definition
+    CODEIS,  CDHALT ,         // representative value (code itself)
 } rule_t;
 
 /* Abstract Syntax Tree node            *\
@@ -193,26 +195,17 @@ typedef enum formal_lang_rule {
 *  hotpath like a statement or variable  *
 *  assignment. It was implemented as so  *
 *  because it's easier to add or remove  *
-*  nodes from it without reallocing it.  *
+*  nodes in a non linear way.            *
 \*                                      */
 typedef struct ast_node node;
 struct ast_node {
-    node *last, *next;
-    u16   vall;
-    aori  itsf;
+    node *last, *next; // used for reading
+    node *stt , *end;  // used for navigation
+    tkn  *ftok, *ltok;
+    u16   type;
+    aori  vall;
+    bool  is_parent;
 };
-typedef struct ast_t astt;
-
-struct ast_t {
-    tkn * strt;        // code path pointer
-    tkn * endo;        // end of code path
-    node *pstt, *pend; // the code path
-};
-
-// when node::next points to EOAST the AST is
-// over. EOAST also holds the first AST node.
-astt __EOAST = {};
-astt * EOAST = &__EOAST;
 
 #define grow_ast(ctxt) \
     ctxt->ctxt = realloc(ctxt->ctxt, ((ctxt->clen++) + 1) * sizeof(astt))
@@ -230,14 +223,14 @@ astt * EOAST = &__EOAST;
 *  global-scopped namespaces.             *
 \*                                       */
 typedef struct cout {
-    char *  outn;
-    char *  nasm;
+    char *  outn; // output file name
+    char *  nasm; // nasm code
 
-    char ** defn;
-    u64     defc;
+    char ** defn; // defined namespaces
+    u64     defc; // dn count
 
-    char ** extr;
-    u64     extc;
+    char ** extr; // external requirements
+    u64     extc; // er count
 } cout;
 
 typedef enum comp_mode {
@@ -249,33 +242,37 @@ typedef enum comp_mode {
 *  compiles the target file into  *
 *  a NASM file (as a string).     *
 \*                               */
-cout * comp(FILE * fptr, char * lddf, char * mode);
+cout *comp(FILE * fptr, char * lddf, char * mode);
+
+// code loader
+stra  load(FILE * fptr);
+
 // lexer
-tkn * lexit();
+tkn  *lexit();
 
-char * get_tokval(tkn * tok);
+char *get_tokval(tkn * tok);
 
-tkn * matchpair(tkn * c);
-void  hasscolon(astt * out);
+tkn  *matchpair(tkn * c);
+void  hasscolon(node * out);
 
 // parser rules
-astt * constd_r(tkn * c);
-astt * define_r(tkn * c);
-astt * assign_r(tkn * c, bool prnd);
-astt * strdef_r(tkn * c);
-astt * enumdf_r(tkn * c);
-astt * struct_r(tkn * c);
-astt * arrdef_r(tkn * c);
-astt * sttmnt_r(tkn * c);
-astt * exprss_r(tkn * c, bool prnd);
-astt *fun_def_r(tkn * c);
-astt *funcall_r(tkn * c);
-astt *labeldf_r(tkn * c);
-astt *jmp_stt_r(tkn * c);
-astt *bodydef_r(tkn * c);
+node * constd_r(tkn * c);
+node * define_r(tkn * c);
+node * assign_r(tkn * c, bool prnd);
+node * strdef_r(tkn * c);
+node * enumdf_r(tkn * c);
+node * struct_r(tkn * c);
+node * arrdef_r(tkn * c);
+node * sttmnt_r(tkn * c);
+node * exprss_r(tkn * c, bool prnd);
+node *fun_def_r(tkn * c);
+node *funcall_r(tkn * c);
+node *labeldf_r(tkn * c);
+node *jmp_stt_r(tkn * c);
+node *bodydef_r(tkn * c);
 
 // parser
-astt * parse(tkn * tkns, cmod mode);
+node * parse(tkn * tkns, cmod mode);
 
 bool isnumc(char chr);
 bool ishexc(char chr);
@@ -295,11 +292,15 @@ void   free_str();
 
 char * nodet_to_str(node * n);
 
+void free_node(node * n);
+
 // compilation error
 void cmperr(imut char * err, tkn * arw, tkn * cmpl);
 void wrning(imut char * wrn, tkn * arw, tkn * cmpl);
 
 #define BIC
+
 #include "bic.c"
 #include "lexer.c"
+#include "loadr.c"
 #include "parser.c"
