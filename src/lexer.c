@@ -70,73 +70,79 @@ u64 upow(u64 b, u64 p){
 }
 
 char * nodet_to_str(node * n){
-    char * out = malloc(512);
+    char * out = malloc(128);
     strcpy(out, "");
-    switch(n->vall){ 
+    switch(n->type){ 
         case KEYWORD :
-            sprintf(out, "KEYWORD %s\n", KEYWORDS[n->itsf.num]);
+            sprintf(out, "KEYWORD %s", KEYWORDS[n->vall.num]);
             break;
         case INDEXER :
-            sprintf(out, "INDEXER %s\n", n->itsf.str);
+            sprintf(out, "INDEXER %s", n->vall.str);
             break;
         case LITERAL :
-            sprintf(out, "LITERAL %s\n", n->itsf.str);
+            sprintf(out, "LITERAL %s", n->vall.str);
             break;
         case LSYMBOL :
-            sprintf(out, "LSYMBOL %s\n", SYMBOLS[n->itsf.num].s);
+            sprintf(out, "LSYMBOL %s", SYMBOLS[n->vall.num].s);
             break;
         case OPERATOR:
-            sprintf(out, "OPERATOR %s\n", OPERATORS[n->itsf.num]);
+            sprintf(out, "OPERATOR %s", OPERATORS[n->vall.num]);
             break;
         case CONSTD  :
-            strcpy(out, "CONSTD\n");
+            strcpy(out, "CONSTD");
         case DEFINE  :
-            sprintf(out, "DEFINE %s\n", KEYWORDS[n->itsf.num]);
+            strcpy(out, "DEFINE");
             break;
         case ASSIGN  :
-            sprintf(out, "ASSIGN %s\n", n->itsf.str);
+            strcpy(out, "ASSIGN");
             break;
         case ARRDEF  :
-            // TODO
+            strcpy(out, "ARRDEF");
             break;
-        case STTDEF  :
-            // TODO
+        case STRDEF  :
+            strcpy(out, "STRDEF");
             break;
         case ENUMDF  :
-            // TODO
+            strcpy(out, "ENUMDF");
             break;
         case STRUCT  :
-            // TODO
+            strcpy(out, "STRUCT");
             break;
         case STTMNT  :
-            // TODO
+            strcpy(out, "STTMNT");
             break;
         case EXPRSS  :
-            strcpy(out, "EXPRSS\n");
+            strcpy(out, "EXPRSS");
             break;
         case LABELD  :
-            // TODO
+            strcpy(out, "LABELD");
             break;
         case JMPSTT  :
-            // TODO
+            strcpy(out, "JMPSTT");
             break;
         case FUNDEF  :
-            sprintf(out, "FUNDEF %s\n", n->itsf.str);
+            strcpy(out, "FUNDEF");
             break;
         case FNCALL  :
-            sprintf(out, "FNCALL %s\n", n->itsf.str);
+            strcpy(out, "FNCALL");
             break;
         case ARGDEF  :
-            strcpy(out, "ARGDEF\n");
+            strcpy(out, "ARGDEF");
             break;
-        case BODYDF  :
-            strcpy(out, "BODYDF\n");
+        case BODYDF:
+            strcpy(out, "BODYDF");
             break;
-        case CODEIS  :
-            strcpy(out, "BEGIN\n");
+        case EOSCPE:
+            strcpy(out, "EOSCPE");
+            break;
+        case CODEIS:
+            strcpy(out, "CODEIS");
+            break;
+        case CDHALT:
+            strcpy(out, "CDHALT");
             break;
         default:
-            sprintf(out, "UNKNOWN [%d]\n", n->vall);
+            sprintf(out, "UNKNOWN [%d]", n->type);
             break;
     }
     return out;
@@ -171,7 +177,7 @@ char * strtohex(char * data){
 }
 
 // To avoid use a lot of memory for each string literal
-// store each occurence in a table and return the index
+// store each occurrence in a table and return the index
 // of it. Also helps in the code gen (put the values in
 // the .data segment of the asm file as constants
 u16 strtoptr(char * str){
@@ -226,7 +232,7 @@ tkn * lexit(){
                 tkn this; // the next token
 
                 this.type = UNKNOWN;
-                this.coll = ctc > 0 ? c - 1 : c;
+                this.coln = ctc > 0 ? c - 1 : c;
                 this.line = l;
 
                 // ignore strings
@@ -403,7 +409,7 @@ tkn * lexit(){
                             // store the number as int for further usage
                             sscanf(this.vall.str, "0x%ld", &this.data);
 
-                            // avoid doing the same thing twise
+                            // avoid doing the same thing twice
                             goto after;
                         }
                         // store the number as int for further usage
@@ -499,8 +505,7 @@ tkn * lexit(){
                 } else continue;
 
                 finish:
-                if(this.type == UNKNOWN)
-                    cmperr(UNEXPCT, &this, nil);
+                assert(this.type != UNKNOWN, "token not evaluated");
 
                 // store the previous token on the current
                 this.last = *lst;
@@ -530,7 +535,7 @@ tkn * lexit(){
         if(isstr){
             tkn arrw = {
                 .line  = l,
-                .coll  = strlen(src) - 1
+                .coln  = strlen(src) - 1
             };
             cmperr(UNCLSTR, &arrw, nil);
         }

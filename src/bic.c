@@ -48,7 +48,10 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
 
     crnt = clock();
     dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
-    printf(" done in %.5fs\n", dt);
+    
+    COL(GRN);
+    printf(" done %sin %s%.5fs\n", DEF, BLU, dt);
+    COL(DEF);
 
     COL(GRN);
     printf("+lexing code   ...");
@@ -58,7 +61,10 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
 
     crnt = clock();
     dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
-    printf(" done in %.5fs\n", dt);
+
+    COL(GRN);
+    printf(" done %sin %s%.5fs\n", DEF, BLU, dt);
+    COL(DEF);
 
     COL(GRN);
     printf("+parsing code  ...");
@@ -75,7 +81,10 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
 
     crnt = clock();
     dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
-    printf(" done in %.5fs\n", dt);
+
+    COL(GRN);
+    printf(" done %sin %s%.5fs\n", DEF, BLU, dt);
+    COL(DEF);
 
     // TODO: final ast gen
     if(cmd == DEBUG) goto skip_opt;
@@ -128,16 +137,25 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
 }
 
 void free_node(node * n){
+    cnst u16 cnnt = 0;
+    char * pout;
     if(!n->is_parent) free(n);
     else {
+        cnnt++;
         node * tmp, *ths = n->stt;
+        assert(ths != nil, nodet_to_str(n));
         while(T){
             tmp = ths;
             ths = tmp->next;
+            
+            pout = nodet_to_str(tmp);
+            printf("%s\n", pout); // This segfaults due to invalid pointer
+            free(pout);
 
             if(tmp == n->end){
                 free_node(tmp);
-                break;    
+                puts("===");
+                break;
             } else free_node(tmp);
         }
         free(n);

@@ -16,17 +16,41 @@
 #define eq_kwd(tok, t)\
 (tok->type == KEYWORD and tok->vall.num >= t[0] and tok->vall.num <= t[1])
 
+// appends a token at the end of the path as a node
+#define tok_to_node(n, t){\
+    n->next = malloc(sizeof(node));\
+    n->next->last = n;\
+    n = n->next;\
+    n->type = t->type;\
+    n->vall = t->vall;\
+    n->next = nil;\
+    n->last = nil;\
+    n->stt  = nil;\
+    n->end  = nil;\
+    n->is_parent = F;\
+}
+
 // code path rules
 
-astt * define_r(tkn * c){
-    astt * path = malloc(sizeof(astt));
-    node * pntr = malloc(sizeof(node));
+node * define_r(tkn * c){
+    node *path = malloc(sizeof(node));
+    node *pntr = malloc(sizeof(node));
+
+    pntr->next = (path->next = nil);
+    pntr->last = (path->last = nil);
+    pntr->stt  = (path->stt  = nil);
+    pntr->end  = (path->end  = nil);
 
     // basic metadata
-    path->strt = c;
-    path->pstt = pntr;
-    pntr->vall = DEFINE;
-    pntr->itsf = c->vall;
+    pntr->is_parent = T;
+    path->type = DEFINE;
+    path->ftok = c;
+
+    // start branches
+    path->stt  = pntr;
+    pntr->type = KEYWORD;
+    pntr->vall = c->vall;
+    pntr->is_parent = F;
 
     // definition has attribution
     if(c->next->next->type == OPERATOR){
@@ -35,294 +59,174 @@ astt * define_r(tkn * c){
 
         // a definition is an keyword and an assignment
         // so evaluate the last part and append the kwd
-        astt * asg = assign_r(c->next->next, F);
+        pntr->next = assign_r(c->next->next, F);
+        path->ltok = pntr->next->ltok;
+        path->end  = pntr->next->end;
 
-        path->endo = asg->endo;
-        pntr->next = asg->pstt;
-        path->pend = asg->pend;
-
-        free(asg);
     // only namespace
-    } else {
-        path->endo = c->next;
-
-        pntr->next = malloc(sizeof(node));
-        pntr = pntr->next;
-        pntr->vall = INDEXER;
-        pntr->itsf = c->next->vall;
-        path->pend = pntr;
+    } else if(c->next->type == INDEXER){
+        path->ltok = c->next;
+        path->end  = pntr;
+        tok_to_node(pntr, c->next);
     }
+
+    path->end->next = path->stt;
+    path->stt->last = path->end;
     return path;
 }
 
 // assignment hotpath's rule
-astt * assign_r(tkn * c, bool prnd){
+node * assign_r(tkn * c, bool prnd){
     // validate operator
     if(!eq_opr_range(c, asgn))
         cmperr(NOTASGN, c, nil);
 
-    astt * path = malloc(sizeof(astt));
-    node * pntr = malloc(sizeof(node));
+    node *path = malloc(sizeof(node));
+    node *pntr = malloc(sizeof(node));
 
-    path->pstt = pntr;
-    path->pstt->itsf.num = 0xA55;
+    path->is_parent = T;
+    path->type = ASSIGN;
+    path->stt  = pntr;
 
-    tkn * strt = c->last;
+    tkn *strt = c->last, *prox = c->next->next;
 
     // Type A: <type> foo = bar [, spm = egg]*
 
     // validate lefthand
+
+    // the last token before the assignment is a square
+    // bracket, a comma, a semicolon or a keyword.
     if(eq_sym(strt->last, SYM_CLN, 0)
     or eq_sym(strt->last, SYM_COM, 0)
     or eq_sym(strt->last, SYM_SQR, 0)
     or eq_kwd(strt->last, ldef)){
-        // the last token before the assigment is a square
-        // bracket, a comma, a semicolon or a keyword.
-        path->strt = strt;
-        pntr->vall = ASSIGN;
-        pntr->itsf = strt->vall;
+        // append the operation's lefthand
+        strt = (path->ftok = c->last);
+        pntr->type = strt->type;
+        pntr->vall = strt->vall;
+        pntr->is_parent = F;
 
-        // operator itself
-        pntr->next = malloc(sizeof(node));
-        pntr = pntr->next;
-        pntr->vall = OPERATOR;
-        pntr->itsf = c->vall;
+        // now the operator itself
+        tok_to_node(pntr, c);
 
-    // invalid position for an assigment
+    // invalid position for an assignment
     } else cmperr(
-        "this assigment is"
+        "this assignment is"
         " at an invalid position", strt, nil);
 
     // validate the righthand
     if(c->next->type == INDEXER or c->next->type == LITERAL){
-        astt *rhnd;
-        tkn  *after = c->next->next;
-
         // check for expressions
-        if(after->type == OPERATOR){
+        if(prox->type == OPERATOR){
             // invalid operators
-            if(after->vall.num == 29 or after->vall.num == 31)
-                cmperr(UNEXPCT, after, nil);
+            if(prox->vall.num == 29 or prox->vall.num == 31)
+                cmperr(UNEXPCT, prox, nil);
 
-            rhnd = exprss_r(after, F);
-            pntr->next = rhnd->pstt;
-            pntr = rhnd->pend;
+            pntr->next = exprss_r(prox, F);
+            pntr = pntr->next;
+            prox = pntr->ltok->next;
 
-            // foo = bar + bazz, egg = bar + spam, ...
+        // another sentence
+        } else
+            // push righthand
+            tok_to_node(pntr, c->next);
+
+            // foo = bar + buzz, egg = bar + spam, ...
             // ................^
             //                 you are here
 
-            // if this is not the end of the path, repeat the
-            // process recursively until someone returns
-            tkn * prox = nil;
-            if(eq_sym(rhnd->endo, SYM_COM, 0)){
-                while(eq_sym(rhnd->endo->next, SYM_COM, 0)){
-                    // prox is the oper of the fallowing exp
-                    if(!prox){
-                        prox = rhnd->endo->next->next->next;
-                        free(rhnd);
-                    } else
-                        prox = rhnd->endo->next->next->next;
-
-                    // evaluate it
-                    rhnd = exprss_r(prox, F);
-
-                    // append it
-                    pntr->next = rhnd->pstt;
-                    pntr = rhnd->pend;
-
-                    free(rhnd);
-                }
-            }
-
-        // another sentence
-        } else if(eq_sym(after, SYM_COM, 0)){
-
-            rhnd = assign_r(after->next, F);
-            // append to the end of the chain
-            pntr->next = rhnd->pstt;
-            pntr = rhnd->pend;
-            
-            // update the fallowing token
-            after = rhnd->endo->next;
-            free(rhnd);
-
-        // just a indexer or a literal
-        } else if(eq_sym(after, SYM_CLN, 0)){
-            path->endo = after->last;
-            // append last node
-            pntr->next = malloc(sizeof(node));
-            pntr = pntr->next;
-            pntr->vall = after->last->type;
-            pntr->itsf = after->last->vall;
-
-            goto finish;
-
-        } else cmperr(UNEXPCT, after, nil);
-
-        // finish with metadata
-        path->endo = rhnd->endo;
-        free(rhnd);
-
-        finish:
-        path->pend = pntr;
-        return path;
+            if(eq_sym(prox, SYM_COM, 0)
+            or eq_sym(prox, SYM_CLN, 0)) goto finish;
+            else cmperr(UNEXPCT, prox, nil);
 
     // the righthand is an expression
     } else if(eq_sym(c->next, SYM_PAR, 0)){
-        tkn * after = c->next->next;
-        
         // an encapsulated signed value
-        if(after->type == OPERATOR){
-            astt * exp = exprss_r(after, T);
-            pntr->next = exp->pstt;
-            pntr = exp->pend;
-
-            path->endo = exp->endo;
-            free(exp);
+        if(prox->type == OPERATOR){
+            pntr->next = exprss_r(prox, T);
+            pntr = pntr->next;
 
         // it's really an expression
-        } else if(after->next->type == OPERATOR){
-            astt * exp = exprss_r(after->next, T);
-            pntr->next = exp->pstt;
-            pntr = exp->pend;
-
-            path->endo = exp->endo;
-            free(exp);
+        } else if(prox->next->type == OPERATOR){
+            pntr->next = exprss_r(prox->next, T);
+            pntr = pntr->next;
 
         // just a value surrounded by parentheses
-        } else {
-            pntr->next = malloc(sizeof(node));
-            pntr->next->vall = after->type;
-            pntr->next->itsf = after->vall;
-
-            path->endo = after;
+        } else if(prox->type == LITERAL or prox->type == INDEXER){
+            tok_to_node(pntr, prox);
+            // after the tok_to_node, the
+            // pntr's last token field is
+            // null (other cases aren't).
+            pntr->ltok = prox;
         }
-        // finish with metadata
-        path->pend = pntr;
-
-        
-        return path;
+        prox = pntr->ltok;
     }
 
-    tkn *frst = c->last, * last = c->next;
-    u64  lcnt = 0, rcnt = 0;
-    bool lst_is_cm = T;
+    finish:
+    // check for multiple definitions
+    while(eq_sym(prox, SYM_COM, 0)){
+        // evaluate next assignation
+        pntr->next = assign_r(prox, F);
 
-    assert(F, nil);
-
-    // Tybe B: <type> foo [, bar]* = spm [, egg]*
-
-    // togle between indexer and semicolon
-    // until you find the starting point
-    for(;!eq_sym(frst, SYM_CLN, 0) and !eq_sym(strt->last, SYM_SQR, 0);
-    frst = frst->last){
-        // indexer
-        if(frst->type == INDEXER){
-            // is this token expected?
-            if(lst_is_cm){
-                lst_is_cm = F;
-                lcnt++;
-
-                pntr->next = malloc(sizeof(node));
-                pntr = pntr->next;
-                pntr->vall = INDEXER;
-
-                continue;
-            } else cmperr(UNEXPCT, frst, nil);
-
-        // comma
-        } else if(eq_sym(frst, SYM_COM, 0)){
-            // is this token expected?
-            if(!lst_is_cm){
-                lst_is_cm = T;
-                continue;
-            } else cmperr(UNEXPCT, frst, nil);
-
-        // it is something unexpected
-        } else cmperr(UNEXPCT, frst, nil);
+        // append it
+        pntr = pntr->next;
+        prox = pntr->ltok->next;
     }
-    // spare comma
-    if(lst_is_cm) cmperr(UNEXPCT, frst, nil);
-    
-    lst_is_cm = T;
-    // togle between indexer and semicolon
-    // until you find the end of the path
-    for(;!eq_sym(last, SYM_CLN, 0); last = last->next){
-        // indexer
-        if(last->type == INDEXER
-        or last->type == LITERAL){
-            // is this token expected?
-            if(lst_is_cm){
-                lst_is_cm = F;
-                rcnt++;
 
-                pntr->next = malloc(sizeof(node));
-                pntr = pntr->next;
-
-                // avoid false positives by jumping over expressions
-                if(last->next->type == OPERATOR){
-                    astt * expr = exprss_r(last->next, F);
-                    last = expr->endo;
-                    
-                    pntr->next = expr->pstt;
-                    pntr = expr->pend;
-
-                    free(expr);
-                // just a single indexer or literal
-                } else {
-                    pntr->vall = last->type;
-                    pntr->itsf = last->vall;
-                }
-                continue;
-
-            } else cmperr(UNEXPCT, last, nil);
-
-        // comma
-        } else if(eq_sym(last, SYM_COM, 0)){
-            // is this token expected?
-            if(!lst_is_cm){
-                lst_is_cm = T;
-                continue;
-            } else cmperr(UNEXPCT, last, nil);
-
-        // it is something unexpected
-        } else cmperr(UNEXPCT, frst, nil);
+    if(prnd){
+        if(eq_sym(prox, SYM_PAR, 1)){
+            tok_to_node(pntr, prox);
+            prox = prox->next;
+        } else cmperr(EXPCTDP, prox, nil);
     }
-    // spare comma
-    if(lst_is_cm) cmperr(UNEXPCT, last, nil);
-    
-    // check if expression is valid
-    if(lcnt != rcnt) cmperr(MSMATCH, c, nil);
-    else path->pend = pntr;
 
+    // TODO: handle multiple assignment
+
+    path->ltok = prox->last;
+    path->end  = pntr;
+
+    path->end->next = path->stt;
+    path->stt->last = path->end;
+
+    assert(path->stt == path->end->next, nil);
     return path;
 }
 // structure definition hotpath's rule
-astt * strdef_r(tkn * c){
-    astt * path = nil;
+node * strdef_r(tkn * c){
+    node * path = nil;
     assert(F, "structures not implemented yet");
     return path;
 }
 // enum definition hotpath's rule
-astt * enumdf_r(tkn * c){
-    astt * path = nil;
+node * enumdf_r(tkn * c){
+    node * path = nil;
     assert(F, "enums not implemented yet");
     return path;
 }
 // structure literal hotpath's rule
-astt * struct_r(tkn * c){
-    astt * path = nil;
+node * struct_r(tkn * c){
+    node * path = nil;
     assert(F, "structures not implemented yet");
     return path;
 }
 // constant definition hotpath's rule
-astt * constd_r(tkn * c){
-    astt *path = malloc(sizeof(astt));
+node * constd_r(tkn * c){
+    node *path = malloc(sizeof(node));
     node *pntr = malloc(sizeof(node));
-    path->pstt = pntr;
 
-    path->pstt->itsf.num = 0xC05;
+    pntr->next = (path->next = nil);
+    pntr->last = (path->last = nil);
+    pntr->stt  = (path->stt  = nil);
+    pntr->end  = (path->end  = nil);
+
+    path->is_parent = T;
+    path->type = CONSTD;
+    path->ftok = c;
+    path->stt  = pntr;
+
+    pntr->type = INDEXER;
+    pntr->vall = c->vall;
+    pntr->is_parent = F;
 
     // the sentense is fallowing the path `NAMESPACE ( ... );`
     if(eq_sym(c->next, SYM_PAR, 0)){
@@ -333,131 +237,101 @@ astt * constd_r(tkn * c){
         or end->next->type == INDEXER
         or end->next->type == LITERAL){
             // do not be redundant
+            free(path);
             free(pntr);
-            // validade path
-            astt * func = fun_def_r(c->next);
-
-            path->strt  = func->strt;
-            path->endo  = func->endo;
-
-            // append chain loop
-            path->pstt = func->pstt;
-            path->pend = func->pend;
-
-            free(func);
-            return path;
+            return fun_def_r(c->next);
 
         // a funcall
         } else if(eq_sym(end->next, SYM_CLN, 0)){
-            return funcall_r(c->last);
+            free(path);
+            free(pntr);
+            return funcall_r(c);
 
         // invalid syntax
         } else cmperr(UNEXPCT, end->next, nil);
-    // check for expressions and values
+
+    // an array definition
+    } else if(eq_sym(c->next, SYM_BRA, 0)){
+        free(path);
+        free(pntr);
+        return arrdef_r(c->next);
+
+    // expression
+    } else if(c->next->next->type == OPERATOR){
+        // validade path
+        pntr->next = exprss_r(c->next->next, F);
+        pntr = pntr->next;
+
+        // finish with metadata
+        path->ltok = pntr->ltok;
+        pntr->end  = pntr;
+
+        path->end->next = path->stt;
+        path->stt->last = path->end;
+        return path;
+
+    // value
+    } else if(c->next->type == INDEXER or c->next->type == LITERAL){
+        tok_to_node(pntr, c->next);
+        
+        // finish with metadata
+        path->ltok = c->next;
+        pntr->end  = pntr;
+
+        path->end->next = path->stt;
+        path->stt->last = path->end;
+        return path;
+
+    // invalid token
     } else {
-        // an array definition
-        if(eq_sym(c->next, SYM_BRA, 0)){
-            astt * end = arrdef_r(c->next);
-            // TODO: implement arrdef_r and its handlers
-
-            free(end);
-            return path;
-        }
-        // expression
-        else if(c->next->next->type == OPERATOR){
-            // validade path
-            astt * expr = exprss_r(c->next->next, F);
-
-            path->strt   = c;
-            path->endo   = expr->endo;
-
-            pntr->vall = CONSTD;
-            pntr->itsf = c->vall;
-            
-            // append chain loop
-            pntr->next = expr->pstt;
-            pntr = expr->pend;
-            path->pend = pntr;
-
-            free(expr);
-            return path;
-        }
-
-        // TODO: handle function call
-
-        // value
-        else if(c->next->type == INDEXER or c->next->type == LITERAL){
-            path->strt = c;
-            path->endo = c->next;
-
-            // namespace
-            pntr->vall = CONSTD;
-            pntr->itsf = c->vall;
-
-            // value
-            pntr->next = malloc(sizeof(node));
-            pntr = pntr->next;
-            pntr->vall = c->next->type;
-            pntr->itsf = c->vall;
-
-            // finish with metadata
-            path->pend = pntr;
-            return path;
-        } else {
-            if(c->next->type == KEYWORD) cmperr(KWRDVAL, c->next, nil);
-            else cmperr(UNEXPCT, c->next, nil);
-        }
+        if(c->next->type == KEYWORD) cmperr(KWRDVAL, c->next, nil);
+        else cmperr(UNEXPCT, c->next, nil);
     }
 }
 // arithmetic and boolean expressions hotpath's rule
-astt * exprss_r(tkn * c, bool prnd){
+node * exprss_r(tkn * c, bool prnd){
     // redirect if it's an assignment
     if(eq_opr_range(c, asgn))
         return assign_r(c, prnd);
     else if(c->type != OPERATOR)
         cmperr(EXPCTEX, c->last, nil);
 
-    astt * path = malloc(sizeof(astt));
+    node * path = malloc(sizeof(node));
     node * pntr = malloc(sizeof(node));
 
-    path->pstt = pntr;
-    pntr->vall = EXPRSS;
+    pntr->next = (path->next = nil);
+    pntr->last = (path->last = nil);
+    pntr->stt  = (path->stt  = nil);
+    pntr->end  = (path->end  = nil);
+
+    path->is_parent = T;
+    path->stt  = pntr;
+    path->type = EXPRSS;
 
     // it's a binary operator
     if(c->last->type == INDEXER
     or c->last->type == LITERAL){
-
         // append lefthand
-        pntr->vall = c->last->type;
-        pntr->itsf = c->last->vall;
-
-        pntr->next = malloc(sizeof(node));
-        pntr = pntr->next;
+        pntr->type = c->last->type;
+        pntr->vall = c->last->vall;
+        pntr->is_parent = F;
 
         // append operator
-        pntr->vall = OPERATOR;
-        pntr->itsf = c->vall;
+        tok_to_node(pntr, c);
 
         // both sides are valid members
         if(c->next->type == INDEXER
         or c->next->type == LITERAL){
             // this is not the entire expression
             if(c->next->next->type == OPERATOR){
-                astt * exp = exprss_r(c->next->next, prnd);
-                path->endo = exp->endo;
-
-                pntr->next = exp->pstt;
-                pntr = exp->pend;
-
-                free(exp);
-
-            // simple expresison
-            } else {
-                pntr->next = malloc(sizeof(node));
+                pntr->next = exprss_r(c->next->next, prnd);
                 pntr = pntr->next;
-                pntr->vall = c->next->type;
-                pntr->itsf = c->next->vall;
-                path->endo = c->next;
+                path->ltok = pntr->ltok;
+
+            // simple expression
+            } else {
+                tok_to_node(pntr, c->next);
+                path->ltok = c->next;
             }
         // so is righthand invalid?
         } else {
@@ -465,43 +339,30 @@ astt * exprss_r(tkn * c, bool prnd){
             if(eq_sym(c->next, SYM_PAR, 0)){
                 // * c->next->next => <opr> >> ( >> <lhd>
                 tkn * rhnd = c->next->next;
-
-                pntr->next = malloc(sizeof(node));
-                pntr = pntr->next;
-
-                pntr->vall = LSYMBOL;
-                pntr->itsf = c->next->vall;
+                tok_to_node(pntr, rhnd->last);
 
                 // righthand is a ``(<opr> foo)`` path
                 if(rhnd->type == OPERATOR){
-                    astt * exp = exprss_r(rhnd, T);
-                    path->endo = exp->endo;
+                    pntr->next = exprss_r(rhnd, T);
+                    pntr = pntr->next;
+                    path->ltok = pntr->ltok;
 
-                    pntr->next = exp->pstt;
-                    pntr = exp->pend;
-
-                    free(exp);
                 // it's really an expression
                 } else if(rhnd->next->type == OPERATOR){
-                    astt * exp = exprss_r(rhnd->next, T);
-                    path->endo = exp->endo;
+                    pntr->next = exprss_r(rhnd->next, T);
+                    pntr = pntr->next;
+                    path->ltok = pntr->ltok;
 
-                    pntr->next = exp->pstt;
-                    pntr = exp->pend;
-
-                    free(exp);
                 // just a value surrounded by parentheses
-                } else {
-                    pntr->next = malloc(sizeof(node));
-                    pntr->next->vall = rhnd->type;
-                    pntr->next->itsf = rhnd->vall;
-
-                    path->endo = rhnd;
+                } else if(rhnd->type == INDEXER or rhnd->type == LITERAL) {
+                    tok_to_node(pntr, rhnd);
+                    path->ltok = rhnd;
                 }
+            // errors
             } else {
                 // it's an assignment operator
                 if(eq_opr_range(c, asgn))
-                    cmperr("invalid value for assigment", c->next, nil);
+                    cmperr("invalid value for assignment", c->next, nil);
                 // something else
                 else if(eq_opr_range(c, eqlt))
                     cmperr("righthand cannot be evaluated", c->next, nil);
@@ -511,81 +372,80 @@ astt * exprss_r(tkn * c, bool prnd){
     } else if(eq_opr_range(c, unry)){
         // append the operator
         tkn * after = c->next->next;
-        pntr->vall = OPERATOR;
-        pntr->itsf = c->vall;
-        // raw value
+        
+        pntr->type = OPERATOR;
+        pntr->vall = c->vall;
+
+        // single value
         if(c->next->type == INDEXER
         or c->next->type == LITERAL){
             if(after->type == OPERATOR){
                 // evaluate the righthand
-                astt * exp = exprss_r(after, prnd);
-                path->endo = exp->endo;
-
-                pntr->next = exp->pstt;
-                pntr = exp->pend;
-
-                free(exp);
-            } else {
-                pntr->next = malloc(sizeof(node));
+                pntr->next = exprss_r(after, prnd);
                 pntr = pntr->next;
-                pntr->vall = c->next->type;
-                pntr->itsf = c->next->vall;
+                path->ltok = pntr->ltok;
 
-                path->endo = c->next;
+            } else {
+                tok_to_node(pntr, c->next);
+                path->ltok = c->next;
             }
-        // enclosured by parentheses
+
+        // cloistered by parentheses
         } else if(eq_sym(c->next, SYM_PAR, 0)){
-            astt * exp = exprss_r(c->next->next->next, T);
-            path->endo = exp->endo;
-
-            pntr->next = exp->pstt;
-            pntr = exp->pend;
-
-            free(exp);
+            pntr->next = exprss_r(c->next->next->next, T);
+            pntr = pntr->next;
+            path->ltok = pntr->ltok;
         }
+
     } else cmperr(
         "lefthand of the expression"
         " is missing or invalid", c->next, nil);
 
     // last syntax check
     if(prnd){
-        if(eq_sym(path->endo->next, SYM_PAR, 1)){
-            pntr->next = malloc(sizeof(node));
-            pntr = pntr->next;
-            pntr->vall = LSYMBOL;
-            pntr->itsf = path->endo->next->vall;
-
-            path->endo = path->endo->next;
+        if(eq_sym(path->ltok->next, SYM_PAR, 1)){
+            tok_to_node(pntr, path->ltok->next);
+            path->ltok = path->ltok->next;
         }
-        else
-            cmperr(EXPCTDP, path->endo->next, nil);
+        else cmperr(EXPCTDP, path->ltok->next, nil);
     }
+
     // finish with metadata
-    path->pend = pntr;
+    path->end = pntr;
+
+    path->end->next = path->stt;
+    path->stt->last = path->end;
     return path;
 }
 // array definition hotpath rule
-astt * arrdef_r(tkn * c){
-    astt * path = nil;
+node * arrdef_r(tkn * c){
+    node * path = nil;
     assert(F, "arrays not implemented yet");
     return path;
 }
 // statement declaration hotpath rule
-astt * sttmnt_r(tkn * c){
-    astt * path = nil;
+node * sttmnt_r(tkn * c){
+    node * path = nil;
     assert(F, "statements not implemented yet");
     return path;
 }
 // function definition hotpath rule
-astt * fun_def_r(tkn * c){
-    astt *path = malloc(sizeof(astt));
+node * fun_def_r(tkn * c){
+    node *path = malloc(sizeof(node));
     node *pntr = malloc(sizeof(node));
-    path->pstt = pntr;
+
+    pntr->next = (path->next = nil);
+    pntr->last = (path->last = nil);
+    pntr->stt  = (path->stt  = nil);
+    pntr->end  = (path->end  = nil);
+
+    path->is_parent = T;
+    path->stt  = pntr;
+    path->type = FUNDEF;
+    path->ftok = c->last;
 
     // end of arguments
     tkn * eoa = matchpair(c);
-    // function indexes
-    path->strt = c;
     
     // the body is a single line
     if(eoa->next->type == INDEXER
@@ -593,26 +453,25 @@ astt * fun_def_r(tkn * c){
         // TODO: handle single lined functions
         assert(F, "single-lined functions not implemented yet");
 
-    // bracket scope
-    } else if(eq_sym(eoa->next, SYM_BRA, 0))
-        path->endo = matchpair(eoa->next);
-
     // function call
-    else if(eq_sym(eoa->next, SYM_CLN, 0)){
+    } else if(eq_sym(eoa->next, SYM_CLN, 0)){
         free(pntr);
         free(path);
         return funcall_r(c->last);
 
+    // bracket scope
+    } else if(eq_sym(eoa->next, SYM_BRA, 0)){
+        path->ltok = matchpair(eoa->next);
+
     } else cmperr(UNEXPCT, c, nil);
 
     // start code path
-    pntr->vall = FUNDEF;
-    pntr->itsf = c->last->vall;
+    pntr->type = INDEXER;
+    pntr->vall = c->last->vall;
+    pntr->is_parent = F;
 
-    pntr->next = malloc(sizeof(node));
-    pntr = pntr->next;
-    pntr->vall = LSYMBOL;
-    pntr->itsf = c->vall;
+    // opening parentheses
+    tok_to_node(pntr, c);
 
     // args is not empty
     if(eoa != c->next){
@@ -624,25 +483,16 @@ astt * fun_def_r(tkn * c){
                         which = T;
                         // default function arguments or computation on assignment
                         if(t->next->type == OPERATOR){
-                            astt * exp = exprss_r(t->next, F);
+                            if(!eq_opr_range(t->next, asgn))
+                                cmperr(NOTASGN, t->next, nil);
 
-                            pntr->next = exp->pstt;
-                            pntr = exp->pend;
+                            node * exp = exprss_r(t->next, F);
+                            pntr->next = exp;
+                            pntr = exp->next;
+                            t = exp->ltok;
 
-                            t = exp->endo;
-                            // it's the end of the args
-                            if(t == eoa){
-                                t = eoa->last;
-                                // go back once we can't break the for loop
-                                break;
-                            }
                         // just the parameter
-                        } else {
-                            pntr->next = malloc(sizeof(node));
-                            pntr = pntr->next;
-                            pntr->vall = INDEXER;
-                            pntr->itsf = t->vall;
-                        }
+                        } else tok_to_node(pntr, t);
                     }
                     else cmperr(UNEXPCT, t, nil);
                     break;
@@ -659,40 +509,121 @@ astt * fun_def_r(tkn * c){
             }
         }
     }
-    pntr->next = malloc(sizeof(node));
-    pntr = pntr->next;
-    pntr->vall = LSYMBOL;
-    pntr->itsf = eoa->vall;
+
+    // closing parentheses
+    tok_to_node(pntr, eoa);
 
     // validate the body of the function
-    astt *body = parse(eoa->next->next, SCOPE);
-    pntr->next = body->pstt;
-    path->pend = body->pend;
+    node *body = parse(eoa->next->next, SCOPE);
+    pntr->next = body->stt;
+    path->ltok = body->ltok;
 
+    path->end = body->end;
     free(body);
+
+    path->end->next = path->stt;
+    path->stt->last = path->end;
     return path;
 }
 // function call hotpath rule
-astt * funcall_r(tkn * c){
-    astt * path = nil;
-    assert(F, "funcall not implemented yet");
+node * funcall_r(tkn * c){
+    node *path = malloc(sizeof(node));
+    node *pntr = malloc(sizeof(node));
+
+    pntr->next = (path->next = nil);
+    pntr->last = (path->last = nil);
+    pntr->stt  = (path->stt  = nil);
+    pntr->end  = (path->end  = nil);
+
+    path->is_parent = T;
+    path->stt = pntr;
+    path->ftok = c;
+    path->type = FNCALL;
+
+    // end of arguments
+    tkn * eoa = matchpair(c->next);
+
+    // append function name
+    pntr->type = INDEXER;
+    pntr->vall = c->vall;
+    pntr->is_parent = F;
+
+    // opening parentheses
+    tok_to_node(pntr, c->next);
+    
+    // the body is a single line
+    if(eoa != c->next->next){
+        // the function call args handling's just
+        // like the function def params handling,
+        // but you seek for exps or literals, not
+        // assignments
+        bool which = 0;
+        for(tkn * t = c->next->next; t != eoa; t = t->next){
+            switch (t->type){
+                case INDEXER:
+                    if(!which){
+                        which = T;
+                        // default function arguments or computation on assignment
+                        if(t->next->type == OPERATOR){
+                            node * exp = exprss_r(t->next, F);
+
+                            pntr->next = exp;
+                            pntr = exp->next;
+
+                            t = exp->ltok;
+
+                        // just the parameter
+                        } else tok_to_node(pntr, t);
+                    } else cmperr(UNEXPCT, t, nil);
+                    break;
+
+                case LITERAL:
+                    if(!which){
+                        which = T;
+                        tok_to_node(pntr, t);
+                    
+                    } else cmperr(UNEXPCT, t, nil); 
+                    break;
+                case LSYMBOL:
+                    if(which) which = F;
+                    else cmperr(UNEXPCT, t, nil); 
+
+                    if(!eq_sym(t, SYM_COM, 0))
+                        cmperr(UNEXPCT, t, nil);
+                    break;
+                default:
+                    cmperr(UNEXPCT, t, nil);
+            }
+        }
+    }
+
+    // closing parentheses
+    tok_to_node(pntr, eoa);
+
+    path->ltok = eoa;
+    path->end = pntr;
+
+    path->end->next = path->stt;
+    path->stt->last = path->end;
     return path;
 }
 // goto jump label hotpath rule
-astt * labeldf_r(tkn * c){
-    astt * path = nil;
+node * labeldf_r(tkn * c){
+    node * path = nil;
     return path;
 }
 // goto jump hotpath rule
-astt * jmp_stt_r(tkn * c){
-    astt * path = nil;
+node * jmp_stt_r(tkn * c){
+    node * path = nil;
     return path;
 }
 
 // matches the closing or opening token index of a given symbol
 tkn * matchpair(tkn * c){
     u64 cnt = 0;
-    // it's a openning symbol
+    assert(c->type == LSYMBOL, "the given token is not paired");
+
+    // it's a opening symbol
     if(c->apdx == 0){
         for(tkn * t = c; t->next != EOTT; t = t->next){
             if(t->type == LSYMBOL and eq_sym(t, c->vall.num, t->apdx)){
@@ -706,7 +637,7 @@ tkn * matchpair(tkn * c){
         }
     // it's a closing one
     } else {
-        for(tkn * t; t->last != EOTT; t = t->last){
+        for(tkn * t = c; t->last != EOTT; t = t->last){
             // it's a symbol
             if(t->type == LSYMBOL){
                 // it's the pair that we're looking for
@@ -724,12 +655,12 @@ tkn * matchpair(tkn * c){
     assert(F, "could not find matching pair");
 }
 
-// checks if the current path is terminated with a scln
-void hasscolon(astt * out){
-    assert(out != nil, nil);
+// checks if the current path is terminated with a semicolon
+void hasscolon(node * out){
+    assert(out != nil && out->is_parent, "invalid node to evaluate");
     // is an end of line?
-    if(!eq_sym(out->endo->next, SYM_CLN, 0))
-        cmperr(NOTERMN, out->endo, nil);
+    if(!eq_sym(out->ltok->next, SYM_CLN, 0))
+        cmperr(NOTERMN, out->ltok, nil);
 }
 
 // returns the token value as a string
@@ -753,21 +684,23 @@ char * get_tokval(tkn * tok){
     }
 }
 
-astt * parse(tkn * tkns, cmod mode){
+node *parse(tkn * tkns, cmod mode){
     // if any rule breaks, retreat parsing until here
-    tkn * ctok = tkns, * eos;
-    astt *ctxt = malloc(sizeof(astt));
+    tkn  *ctok = tkns, * eos;
+    node *ctxt = malloc(sizeof(node));
+    node *pntr = nil;
+    ctxt->stt = pntr;
 
-    node * pntr = malloc(sizeof(node));
-    ctxt->pstt = pntr;
+    ctxt->is_parent = T;
+    ctxt->type = (mode == SCOPE ? BODYDF : CODEIS);
 
     // config code chuck
     if(mode == SCOPE){
         eos = matchpair(tkns->last);
-        pntr->vall = BODYDF;
+        ctxt->type = BODYDF;
     } else {
         eos = EOTT;
-        pntr->vall = CODEIS;
+        ctxt->type = CODEIS;
     }
 
     bool mtch = T;
@@ -792,27 +725,35 @@ astt * parse(tkn * tkns, cmod mode){
     case_KEYWORD:
         // local definition
         if(eq_kwd(tok, ldef)){
-            astt * def = define_r(tok);
+            // avoid memory leaking
+            if(ctxt->stt){
+                pntr->next = define_r(tok);
+                pntr->next->last = pntr;
+                pntr = pntr->next;
+            } else {
+                ctxt->stt = define_r(tok);
+                pntr = ctxt->stt;
+            }
 
-            // append to chain and move to the next link
-            pntr->next = def->pstt;
-            pntr = def->pend;
-
-            hasscolon(def);
-            tok = def->endo;
-            free(def);
+            // there is an end of line
+            hasscolon(pntr);
+            tok = pntr->ltok;
 
         // statements
         } else if(eq_kwd(tok, sttt)){
-            astt * stt = sttmnt_r(tok);
-
-            pntr->next = stt->pstt;
-            pntr = stt->pend;
-
-            // is an end of line?
-            hasscolon(stt);
-            tok = stt->endo;
-            free(stt);
+            // avoid memory leaking
+            if(ctxt->stt){
+                pntr->next = sttmnt_r(tok);
+                pntr->next->last = pntr;
+                pntr = pntr->next;
+            } else {
+                ctxt->stt = sttmnt_r(tok);
+                pntr = ctxt->stt;
+            }
+            
+            // there is an end of line?
+            hasscolon(pntr);
+            tok = pntr->ltok;
 
         // otherwise is not
         } else cmperr(ALONEXP, tok->last, nil);
@@ -826,15 +767,19 @@ astt * parse(tkn * tkns, cmod mode){
         if(tok->next->type == OPERATOR){
             nxt(tok);
         } else {
-            astt * def = constd_r(tok);
+            // avoid memory leaking
+            if(ctxt->stt){
+                pntr->next = constd_r(tok);
+                pntr->next->last = pntr;
+                pntr = pntr->next;
+            } else {
+                ctxt->stt = constd_r(tok);
+                pntr = ctxt->stt;
+            }
 
-            pntr->next = def->pstt;
-            pntr = def->pend;
-
-            // is an end of line?
-            hasscolon(def);
-            tok = def->endo;
-            free(def);
+            // there is an end of line?
+            hasscolon(pntr);
+            tok = pntr->ltok;
         }
         nxt(tok);
 
@@ -843,54 +788,72 @@ astt * parse(tkn * tkns, cmod mode){
 
     case_LSYMBOL:
         if(eq_sym(tok, SYM_BRA, 0)){
-            astt * scp = parse(tok->next, SCOPE);
+            // avoid memory leaking
+            if(ctxt->stt){
+                pntr->next = parse(tok, SCOPE);
+                pntr->next->last = pntr;
+                pntr = pntr->next;
+            } else {
+                ctxt->stt = parse(tok, SCOPE);
+                pntr = ctxt->stt;
+            }
 
-            pntr->next = scp->pstt;
-            pntr = scp->pend;
-
-            // is an end of line?
-            hasscolon(scp);
-            tok = scp->endo;
-            free(scp);
+            // there is an end of line?
+            hasscolon(pntr);
+            tok = pntr->ltok;
 
         // it's the end of the scope
         } else if(eq_sym(tok, SYM_BRA, 1)){
             // finish if it's the end and we're within a scope
-            if(mode == SCOPE) goto *lbls[UNKNOWN];
+            if(mode == SCOPE){
+                if(matchpair(tok) == tkns){
+                    goto *lbls[UNKNOWN];
+                } else {
+                    nxt(tok);
+                }
+            }
             else cmperr(UNEXPCT, tok, nil);
 
         // just a terminator, next token!
-        } else if(eq_sym(tok, SYM_CLN, 0)){
-            nxt(tok);
-        } else
+        } else if(!eq_sym(tok, SYM_CLN, 0))
             cmperr(UNEXPCT, tok, nil);
+
         nxt(tok);
 
     // expressions
     case_OPERATOR:
-        // an assigment is allowed out of an statement
+        // an assignment is allowed out of an statement
         if(eq_opr_range(tok, asgn)){
-            astt * exp = assign_r(tok, F);
+            // avoid memory leaking
+            if(ctxt->stt){
+                pntr->next = assign_r(tok, F);
+                pntr->next->last = pntr;
+                pntr = pntr->next;
+            } else {
+                ctxt->stt = assign_r(tok, F);
+                pntr = ctxt->stt;
+            }
 
-            pntr->next = exp->pstt;
-            pntr = exp->pend;
-
-            // is an end of line?
-            hasscolon(exp);
-            tok = exp->endo;
-            free(exp);
+            // there is an end of line?
+            hasscolon(pntr);
+            tok = pntr->ltok;
 
         // other operations are not
         } else cmperr(ALONEXP, tok, nil);
         nxt(tok);
 
     case_EOTT:
-        ctxt->endo = eos;
-        if(mode != SCOPE){
-            pntr->next = ctxt->pstt;
-            ctxt->pstt->last = pntr;
-        }
-        ctxt->pend = pntr;
+        assert(tok == EOTT, nil);
+
+        pntr->next = malloc(sizeof(node));
+        pntr->next->last = pntr;
+        pntr = pntr->next;
+
+        pntr->type = (mode == SCOPE ? EOSCPE : CDHALT);
+        pntr->is_parent = F;
+
+        ctxt->ltok = eos;
+        ctxt->end  = pntr;
 
     return ctxt;
 }
