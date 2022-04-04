@@ -14,45 +14,52 @@
 
 // list of the reserved keywords
 imut char KEYWORDS[][8] = {
-    "if"   , "elif" , "else" ,
-    "for"  , "goto" , "break", "next",
-    "extrn", "auto" , "char" , "pntr",
-    "dist" , "from" , "in"   ,
-
+    "if"    , "elif"  , "for"   , "switch",
+    "else"  ,
+    "goto"  , "extrn" , "return",
+    "next"  , "break" ,
     "typeof", "sizeof", "getval",
-    "struct", "switch", "return",
+    "auto"  , "char"  , "pntr"  ,
+    "dist"  , "from"   , "in"   , "struct",
 };
 enum {
-    KW_IF   , KW_ELIF , KW_ELSE ,
-    KW_FOR  , KW_GOTO , KW_BREAK,
-    KW_EXTRN, KW_AUTO , KW_CHAR , KW_PNTR,
-    KW_DIST ,
+    KW_IF  , KW_ELIF, KW_FOR, KW_SWITCH,  // true statements
+    KW_ELSE,                              // body holder
 
-    KW_TYPEOF, KW_SIZEOF, KW_GETVAL,
-    KW_STRUCT, KW_SWITCH, KW_RETURN,
+    KW_GOTO, KW_EXTRN, KW_RETURN,         // expression holders
+    KW_NEXT, KW_BREAK,                    // single ones
+
+    KW_TYPEOF, KW_SIZEOF, KW_GETVAL,      // function-like
+
+    KW_AUTO, KW_CHAR, KW_PNTR,            // not statements
+    KW_DIST, KW_FROM, KW_IN  , KW_STRUCT,
 };
-u16 ldef[2] = {07,  9}; // local var's definition keywords
-u16 sttt[2] = {00, 03}; // statement keywords
-u16 funl[2] = {11, 13}; // function-like keywords
+
+u16 ldef[2] = {13, 15}; // local var's definition keywords
+u16 sttt[2] = {00,  9}; // statement keywords
+u16 trus[2] = {00,  3};
+u16 body[2] = {04,  4};
+u16 hldr[2] = {05,  7};
+u16 sngl[2] = { 8,  9};
+u16 funl[2] = {10, 12};
 
 // list of operators
 imut char OPERATORS[][4] = {
     // assignment operators
     "="  , "+=", "-=", "*=" , "/=" , "%=",
-    "~=" , "|=", "&=", ">>=", "<<=",
+    "~=" , "|=", "&=", "^=" , ">>=", "<<=",
     // equality operators
     "==" , "!=", "<" , ">"  , "<=" , ">=",
 
     // arithmetic operators
     "*"  , "/" , "%" , "+"  , "-"  ,
     // bitwise operators
-    "~"  , "|" , "&" , ">>" , "<<" ,
+    "~"  , "|" , "&" , "^"  , ">>" , "<<" ,
 
     // boolean operators
     "and", "or", "not",
 
     // miscellaneous
-    "^"  ,        // pointer operator
     ":"  ,        // label operator
     ".."          // range operator
 };
@@ -61,8 +68,8 @@ u16 asgn[2] = {0 , 10}; // assignment operators
 u16 eqlt[2] = {11, 16}; // equality operators
 u16 arth[2] = {17, 21}; // arithmetic operators
 u16 unry[2] = {20, 22}; // unary operators
-u16 btws[2] = {22, 26}; // bitwise operators
-u16 blan[2] = {27, 29}; // boolean operators
+u16 btws[2] = {23, 28}; // bitwise operators
+u16 blan[2] = {29, 31}; // boolean operators
 
 typedef struct string_array {
     char **arr;
@@ -136,17 +143,16 @@ typedef enum token_t {
     UNKNOWN,
 } tknt;
 
+typedef union string_or_int {
+    char * str; // string for literals and indexers
+    u32    num; // number to keywords and operators (pointers)
+} aori;
+
 /* token                            *\
 *  ================================  *
 *  a struct that holds a the string  *
 *  literal, its syntax role and its  *
 \* code positioning (line and coln) */
-
-typedef union string_or_int {
-    char * str; // string for literals and indexers
-    u16    num; // number to keywords and operators (pointers)
-} aori;
-
 typedef struct token tkn;
 struct token {
     u32  apdx;
@@ -155,10 +161,6 @@ struct token {
     tknt type;
     u64  line,  coln;
     tkn *next, *last;
-};
-// appendix data
-enum {
-    FREEABLE = 1, STRING_L
 };
 
 // when tkn::next points to EOTT the token tree
@@ -267,7 +269,7 @@ node * sttmnt_r(tkn * c);
 node * exprss_r(tkn * c, bool prnd);
 node *fun_def_r(tkn * c);
 node *funcall_r(tkn * c);
-node *labeldf_r(tkn * c);
+node *labeldf_r(tkn * c, bool is_swedish);
 node *jmp_stt_r(tkn * c);
 node *bodydef_r(tkn * c);
 
@@ -286,9 +288,9 @@ i16  iskeyw(char * str);
 u64 upow(u64 b, u64 p);
 
 //char * hextostr(char * str);
-char * strtohex(char * str);
-u16    strtoptr(char * str);
-void   free_str();
+u32  strtohex(char * str);
+u64  strtoptr(char * str);
+void free_str();
 
 char * nodet_to_str(node * n);
 
