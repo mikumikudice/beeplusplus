@@ -247,7 +247,10 @@ elif x - 2 > 0 { x -= 2; }; // elif is the unambiguous version of `else if`
 else { printf("x is %d*n", x); };
 ```
 
-And if you are ~Swedish~ a Switch enjoyer (not the console), you can replace the if-else chain with `switch`:
+Note that:
+* just like in the early days of [Odin](https://github.com/odin-lang/odin), there is no if/elif/else block without square brackets.
+
+And if you are ~Swedish~ a Switch enjoyer (not the console), you can replace the if-else chain with a `switch` block:
 ```c
 auto x = 4;
 
