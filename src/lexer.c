@@ -5,14 +5,17 @@
 // header-located string array
 stra sarr;
 
+// checks if the given character is a valid decimal number digit
 bool isnumc(char chr){
     return isdigit(chr);
 }
 
+// checks if the given character is a valid hexadecimal number digit
 bool ishexc(char chr){
     return isxdigit(chr);
 }
 
+// checks if the given character is a valid namespace one
 bool validn(char chr){
     return (('0' <= chr and chr <= '9') or
             ('A' <= chr and chr <= 'Z') or
@@ -20,6 +23,7 @@ bool validn(char chr){
     chr == '_');
 }
 
+// checks if the given string matches all chars according to the given func
 bool matchs(char * str, bool(*func)(char)){
     bool valid = T;
     for(u64 c = 0; c < strlen(str); c++){
@@ -29,17 +33,7 @@ bool matchs(char * str, bool(*func)(char)){
     return valid;
 }
 
-bool hassym(char * str){
-    u16 len = arrlen(SYMBOLS);
-    for(u16 p = 0; p < len; p++){
-        if(SYMBOLS[p].s != nil)
-        if(endswith(str, SYMBOLS[p].s)) return T;
-
-        if(endswith(str, SYMBOLS[p].e)) return T;
-    }
-    return F;
-}
-
+// checks if the char in str is scaped (seeks for backslashes)
 bool isscpd(char * str, u64 chr){
     if(chr < 0) return F;
 
@@ -48,6 +42,7 @@ bool isscpd(char * str, u64 chr){
     else return F;
 }
 
+// returns the index of the keyword if str is one, otherwise returns -1
 i16 iskeyw(char * str){
     u16 len = arrlen(KEYWORDS);
     for(u16 kw = 0; kw < len; kw++){
@@ -56,8 +51,9 @@ i16 iskeyw(char * str){
     return -1;
 }
 
-// using rookieslab method
+// power function
 u64 upow(u64 b, u64 p){
+    // using rookieslab method
     u64 out = 1;
     while(p > 0){
         if(p & 1){
@@ -69,6 +65,7 @@ u64 upow(u64 b, u64 p){
     return out;
 }
 
+// returns the given node as a string
 char * nodet_to_str(node * n){
     char * out = malloc(128);
     strcpy(out, "");
@@ -80,7 +77,7 @@ char * nodet_to_str(node * n){
             sprintf(out, "INDEXER %s", n->vall.str);
             break;
         case LITERAL :
-            sprintf(out, "LITERAL %s", n->vall.str);
+            sprintf(out, "LITERAL %lx", n->vall.num);
             break;
         case LSYMBOL :
             sprintf(out, "LSYMBOL %s", SYMBOLS[n->vall.num].s);
@@ -148,39 +145,25 @@ char * nodet_to_str(node * n){
     return out;
 }
 
-char * strtohex(char * data){
-    // avoid too many calls
-    u16 len = arrlen(metachar);
-    for(u16 mc = 0; mc < len; mc++){
-        data = strgsub(data, metachar[mc].key, metachar[mc].val);
+// converts the string path to a hexadecimal value
+u32 strtohex(char * data){
+    u32 out = 0x00000000;
+    u16 len = strlen(data);
+    assert(len <= 4, nil);
+
+    for(u16 d = 4; d > 0; d--){
+        if(d <= len){
+            out |= data[len - d] << d * 8;
+        }
     }
-
-    // keep it in memory
-    char temp[strlen(data) + 1];
-    strcpy(temp, data);
-
-    free(data);
-    data = malloc(strlen(temp) * 2 + 3);
-    sprintf(data, "0x");
-
-    char othr[strlen(temp) * 2 + 3];
-
-    // convert string to hex code
-    for(u64 c = 0; c < strlen(temp); c++){
-        strcpy(othr, data);
-        sprintf(data, "%s%.2x", othr, temp[c]);
-    }
-    // keep length constant
-    while(strlen(data) < 10) data = strpush(data, "00");
-
-    return data;
+    return out;
 }
 
-// To avoid use a lot of memory for each string literal
-// store each occurrence in a table and return the index
-// of it. Also helps in the code gen (put the values in
-// the .data segment of the asm file as constants
-u16 strtoptr(char * str){
+// To avoid use a lot of memory duplication, making one instance
+// for each string literal, store each occurrence in a table and
+// return the index of it. It also helps with the code gen step,
+// by placing the values in the .rodata segment of the nasm file
+u64 strtoptr(char * str){
     // init array if its nil
     if(!sarr.arr) sarr.arr = malloc(sizeof(char *));
     for(u64 s = 0; s < sarr.len; s++){
@@ -192,6 +175,7 @@ u16 strtoptr(char * str){
     return sarr.len - 1;
 }
 
+// free all global string instances
 void free_str(){
     for(u64 s = 0; s < sarr.len; s++){
         free(sarr.arr[s]);
@@ -200,11 +184,10 @@ void free_str(){
 
 tkn * lexit(){
     // primitive ast output
-    tkn * out = malloc(sizeof(tkn));
+    tkn * out;
     tkn **lst = &EOTT; // the address of the last token pointer
 
     // set up the chain loop
-    EOTT->next = out;
     EOTT->apdx = 0;    // the count of tokens
 
     // current line
@@ -222,27 +205,30 @@ tkn * lexit(){
         char ctkn[lsz];
 
         for(u64 c = 0; c < lsz; c++){
-
-            // it's a token letter, just append
+            // it's a token letter, so just append it
             if(validn(src[c])){
                 ctkn[ctc++] = src[c];
             }
-            // do something now
+            // it's not, so it's a especial character or a space
             else {
                 tkn this; // the next token
 
                 this.type = UNKNOWN;
                 this.coln = ctc > 0 ? c - 1 : c;
                 this.line = l;
+                this.apdx = 0;
 
-                // ignore strings
+                // if we're entering a string literal
+                // path just continue appending it
                 if(src[c] == metachar[0].val[0]
                 or src[c] == metachar[1].val[0]){
                     bool issc = isscpd(src, c);
                     
                     // in and out of string
-                    if(!issc) isstr = !isstr;
-
+                    if(!issc) {
+                        isstr = !isstr;
+                        if(isstr) continue;
+                    }
                     if(!isstr){
                         this.type = LITERAL;
 
@@ -262,16 +248,18 @@ tkn * lexit(){
                                 dummy = str_sub(dummy, 0, 4);
                                 free(temp);
                             }
-                            this.vall.str = strtohex(dummy);
-                            this.apdx = FREEABLE;
+                            this.vall.num = strtohex(dummy);
+                            free(dummy);
                         // it's a string
                         } else {
                             // store the string literals at a
                             // table to be put in the head of
                             // the object file and in the tkn
                             // just store the pointer to it.
-                            this.vall.num = strtoptr(dummy);
-                            this.apdx = STRING_L;
+                            u64 indx = strtoptr(dummy);
+                            if(sarr.arr[indx] != dummy) free(dummy);
+
+                            this.vall.num = indx;
                         }
                         ctc = 0;
                         goto finish;
@@ -285,15 +273,16 @@ tkn * lexit(){
                     ctkn[ctc++] = src[c];
                     continue;
                 }
-                // keyword, index or literal
+                // the read token is a keyword, index or literal
                 else if(ctc > 0){
-                    // just close the buffer
+                    // first close the buffer
                     ctkn[ctc] = '\0';
 
                     // resset the current token
                     // pointer to the beginning
                     ctc = 0;
 
+                    // check if it's a keyword
                     i16 idx = iskeyw(ctkn);
 
                     // keyword
@@ -301,9 +290,12 @@ tkn * lexit(){
                         this.type = KEYWORD;
                         this.vall.num = idx;
                     } else {
+                        // parse as number literals
                         bool ish = F, isb = F, iso = F, isn = F;
                         bool hashexpr, hasbinpr, hasoctpr;
-                        u64 msd_h = 0, msd_b = 0, msd_o = 0;
+                        
+                        // pointers to the start of the number
+                        i64 h_stt = -1, b_stt = -1, o_stt = -1, d_stt = -1;
                         u64 size = strlen(ctkn);
 
                         hashexpr = startswith(ctkn, "0x");
@@ -317,38 +309,43 @@ tkn * lexit(){
                         for(u16 chr = 2; chr < size; chr++){
                             ish = ishexc(ctkn[chr]);
                             if(!ish) break;
-                            if(!msd_h and ctkn[chr] > '0')
-                            msd_h = chr;
+
+                            if(h_stt == -1 and ctkn[chr] > '0')
+                            h_stt = chr;
                         }
                         // as binary
                         else if(hasbinpr)
                         for(u16 chr = 2; chr < size; chr++){
                             isb = ctkn[chr] == '0' or ctkn[chr] == '1';
                             if(!isb) break;
-                            if(!msd_b and ctkn[chr] > '0')
-                            msd_b = chr;
+
+                            if(b_stt == -1 and ctkn[chr] > '0')
+                            b_stt = chr;
                         }
                         // as octal
                         else if(hasoctpr)
                         for(u16 chr = 2; chr < size; chr++){
                             iso = ctkn[chr] >= '0' or ctkn[chr] <= '7';
                             if(!iso) break;
-                            if(!msd_o and ctkn[chr] > '0')
-                            msd_o = chr;
+
+                            if(o_stt == -1 and ctkn[chr] > '0')
+                            o_stt = chr;
                         }
                         // as decimal
                         else
                         for(u16 chr = 0; chr < size; chr++){
                             isn = isnumc(ctkn[chr]);
                             if(!isn) break;
+
+                            if(d_stt == -1 and ctkn[chr] > '0')
+                            d_stt = chr;
                         }
 
                         // hex literal
                         if(hashexpr){
                             if(ish){
                                 this.type = LITERAL;
-                                this.vall.str = malloc(strlen(ctkn) + 1);
-                                strcpy(this.vall.str, ctkn);
+                                sscanf(ctkn, "%x", &this.vall.num);
                             // invalid pattern
                             } else
                                 cmperr(UNEXPCT, &this, nil);
@@ -357,67 +354,39 @@ tkn * lexit(){
                         else if(hasbinpr){
                             if(isb){
                                 this.type = LITERAL;
-                                u64 val = 0,
-                                len = strlen(ctkn) - 2;
+                                this.vall.num = 0;
+                                u64 len = strlen(ctkn) - 2;
 
-                                for(u64 d = 0; d < len; d++){
-                                    val += upow(2, len - d - 1);
+                                for(u64 d = len; d > 1; d--){
+                                    if(ctkn[d] == '1')
+                                        this.vall.num += upow(2, d - 1);
                                 }
-
-                                u64 tmp = upow(2, len - 1);
-                                u16 cnt = 0;
-
-                                while(tmp > 0) tmp /= 16, cnt++;
-                                this.vall.str = malloc(cnt + 1);
-
-                                // store all numeric values as hexadecimal
-                                sprintf(this.vall.str, "%lx", val);
                             // invalid pattern
                             } else
-                            cmperr(UNEXPCT, &this, nil);
+                                cmperr(UNEXPCT, &this, nil);
                         }
                         // oct literal
                         else if(hasoctpr){
                             if(iso){
                                 this.type = LITERAL;
-                                u64 len = upow(msd_h, 8);
-                                len *= src[msd_h] - 48;
-                                u64 tmp = len;
-
-                                u16 cnt = 0;
-                                while(tmp > 0) tmp /= 16, cnt++;
-
-                                u64 val;
-                                sscanf(ctkn, "%lo", &val);
-
-                                // store all numeric values as hexadecimal
-                                this.vall.str = malloc(cnt + 1);
-                                sprintf(this.vall.str, "%lx", val);
+                                sscanf(ctkn, "%lo", &this.vall.num);
                             // invalid pattern
                             } else
-                            cmperr(UNEXPCT, &this, nil);
+                                cmperr(UNEXPCT, &this, nil);
                         } else {
                             // decimal literal
-                            if(isn)
+                            if(isn){
                                 this.type = LITERAL;
+                                sscanf(ctkn, "%d", &this.vall.num);
                             // indexer
-                            else
+                            } else if(!isnumc(ctkn[0])){
                                 this.type = INDEXER;
+                                this.vall.str = malloc(strlen(ctkn) + 1);
+                                strcpy(this.vall.str, ctkn);
 
-                            this.vall.str = malloc(strlen(ctkn) + 1);
-                            strcpy(this.vall.str, ctkn);
-                            // store the number as int for further usage
-                            sscanf(this.vall.str, "0x%ld", &this.data);
-
-                            // avoid doing the same thing twice
-                            goto after;
+                            // invalid indexer name
+                            } else cmperr(INVALID, &this, nil);
                         }
-                        // store the number as int for further usage
-                        sscanf(this.vall.str, "0x%lx", &this.data);
-                        after:
-
-                        // mark it as freeable
-                        this.apdx = FREEABLE;
                     }
                     // decrement it if the
                     // current char may be 
@@ -517,14 +486,16 @@ tkn * lexit(){
                 // once the token is already on the chain,
                 // move to the current's next token
                 *next = malloc(sizeof(tkn));
+                memcpy(*next, &this, sizeof(tkn));
+
+                if(EOTT->apdx == 0) EOTT->next = *next;
 
                 if(l == code.len - 1 and c == lsz - 1){
                     // EOTT holds the first token and the first token
                     // holds EOTT, so this chain is circular
-                    this.next = EOTT;
+                    (*next)->next = EOTT;
                     EOTT->last = *next;
                 }
-                memcpy(*next, &this, sizeof(tkn));
                 // the next token is the next of the current, so update lst
                 lst = next;
 
