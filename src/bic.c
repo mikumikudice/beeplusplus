@@ -1,15 +1,15 @@
 #define LSIZE (64 << 1) // max of bytes read per line
 
 // error messages
+imut char * PRVONHR = "previously opened here";
 imut char * REALERR = "an unexpected error occurred";
 imut char * UNEXPCT = "unexpected symbol found here";
-imut char * EXPCTDS = "expected expression or terminator";
 imut char * UNCLSTR = "unclosed string found here";
 imut char * UNCCMMT = "unclosed multiline comment found here";
 imut char * UNCBRCK = "unclosed bracket found here";
 imut char * UNCPARN = "unclosed parentheses found here";
+imut char * EXPCTDS = "expected expression or terminator";
 imut char * EXPCTDP = "expected a parentheses at the end of this expression";
-imut char * PRVONHR = "previously opened here";
 imut char * ALONEXP = "expression out of context found here";
 imut char * CALLERR = "attempt to call an undefined function";
 imut char * TOOFEWC = "too few arguments in the statement";
@@ -17,12 +17,14 @@ imut char * TOOMUCH = "too much arguments in the statement";
 imut char * MULTIDF = "attempt to define multiple times the same namespace";
 imut char * LITRIDX = "attempt to use a literal as namespace";
 imut char * KWRDIDX = "attempt to use a keyword as namespace";
-imut char * KWRDVAL = "attempt to use a keyword as value";
+imut char * KWRDVAL = "attempt to use a invalid statement as value";
 imut char * EXPCTEX = "expected expression at this point";
+imut char * EXPCTBD = "expected expression or body at this point";
 imut char * DEFWOEQ = "you cannot assign a variable with shorthand operators while defining it";
 imut char * NOTASGN = "this is not a valid assignment operator";
 imut char * MSMATCH = "mismatch of number of assignators and assignateds in expression";
 imut char * NOTERMN = "no terminator at the end of the line";
+imut char * INVALID = "invalid namespace name";
 
 // string array of each line of code
 stra code;
@@ -31,6 +33,9 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     // output
     cout * out = malloc(sizeof(out));
 
+    // TODO: parse the compiler config comments
+    
+    // set the default output name
     char * dummy = malloc(strlen(lddf) + 1);
     strcpy(dummy, lddf);
     out->outn  = strgsub(dummy, ".bi", "");
@@ -46,6 +51,7 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     // load code
     code = load(fptr);
 
+    // time to load the file
     crnt = clock();
     dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
     
@@ -59,6 +65,7 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
 
     tkn * tkns = lexit();
 
+    // time to lex the file
     crnt = clock();
     dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
 
@@ -79,6 +86,7 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     node * bast = parse(tkns, cmd);
     if(cmd == CHECK) goto skip_cmp;
 
+    // time to parse the file
     crnt = clock();
     dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
 
@@ -111,20 +119,14 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     // free tokens
     for(tok = tkns; cnt > 0; tok = tok->next, cnt--){
         // only free string values
-        if(tok->type == INDEXER)
-            free(tok->vall.str);
-
-        // only free char literals
-        else if(tok->type == LITERAL and tok->apdx == FREEABLE)
-            free(tok->vall.str);
-
+        if(tok->type == INDEXER) free(tok->vall.str);
         if(old) free(old);
         old = tok;
     }
     free(old);
     free_str();
 
-    // compilation time
+    // total compilation time
     crnt = clock();
     dt = ((double)(crnt - oldt)) / ((double)CLOCKS_PER_SEC);
 
