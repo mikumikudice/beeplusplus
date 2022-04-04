@@ -13,6 +13,7 @@ int main(i32 argc, char ** args){
     bool   nasm = F, tidx = F, opts = T, strp = F;
     char * lddf, * outf = nil, * mthd = nil;
 
+    // no arguments, so prompt help
     if(argc == 1){
         printf("B++ (incremented B) Compiler v%s - %s "\
         "copyright(c) Mateus M. D. Souza\n", CVER, DATE);
@@ -29,6 +30,7 @@ int main(i32 argc, char ** args){
         );
         return 0;
     } else {
+        // what command is this?
         if( strcmp(args[1], "check")
         and strcmp(args[1], "debug")
         and strcmp(args[1], "build"))
@@ -36,6 +38,7 @@ int main(i32 argc, char ** args){
             cmperr("invalid compiler argument.\n"\
             "please try running without args to get help.", nil, nil);
 
+        // the minimum of arguments when compiling is 3
         if(argc < 3) cmperr("source file is missing", nil, nil);
 
         // check files
@@ -43,20 +46,24 @@ int main(i32 argc, char ** args){
             if(access(args[f], F_OK))
                 cmperr("the given file does not"
                 " exist or cannot be read", nil, nil);
-            // TODO: compile all files and link them
+
+            // TODO: check other arguments and work properly with them
+            // * expected files: .o, .s, .bi
         }
 
-        u64 len = strlen(args[2]);
-        char * lddf = malloc(len + 1);
-        memcpy(lddf, args[2], len);
-        lddf[len] = '\0';
+        // create a mutable and freeable copy of the file name
+        char * lddf = malloc(strlen(args[2]) + 1);
+        strcpy(lddf, args[2]);
 
+        // the main module file is the first file
         fptr = fopen(lddf, "r");
-        // null file
+
+        // no file found
         if(fptr == nil)
             cmperr("something went wrong"
             " while reading the file", nil, nil);
-        // prettify name
+
+        // prettify name so then the compiler knows the module name
         char * temp = strrchr(lddf, '/');
         if(temp) temp = temp + 1;
 
