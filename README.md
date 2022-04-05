@@ -101,32 +101,32 @@ Code must be understandable for both humans and computers. And code must be simp
 * no "1 problem, multiple solutions" approach, but instead "thousands of problems, one solution".
 
 ### 2: Safe when testing, fast when running
- I want a program that instead of crash and obligate me to debug hours and hours, just to figure out that an array was being read out of bounds, warns me about where, when and how an invalid read/write happened. But also, when everything is cleaned up and well optimized, I want to make a unsafe-checked program that runs as fast as possible. That implies in:
+I want a program that instead of crash and obligate me to debug hours and hours, just to figure out that an array was being read out of bounds, warns me about where, when and how an invalid read/write happened. But also, when everything is cleaned up and well optimized, I want to make a unsafe-checked program that runs as fast as possible. That implies in:
 * typesafe and fixed and simple ruleset for all types during compile-time.
 * memory safe during run-time in debug mode.
 * massive optimization while producing understandable NASM code in release mode.
 
 ### 3: Reliable and lightweight
- Also, the code must be efficient and well developed by the developer, to then be well optimized and implemented by the compiler. Both developer and program should be reliable for each other. That implies in:
+Also, the code must be efficient and well developed by the developer, to then be well optimized and implemented by the compiler. Both developer and program should be reliable for each other. That implies in:
 * total control over optimizations.
 * compiler complaining about ambiguous or expensive algorithms.
 * simple yet complete error messages about errors in compile and run-times.
 
-## Why B?
- I'm an old soul trapped in a young body. I like floppy disks, the idea of a mainframe and old languages (such as Fortran and B). And I like the idea of the roots of C. From where we came from. Also, it's a canonic language in one of my favorite cartoons.
+## Why revive B?
+I'm an old soul trapped in a young body. I like floppy disks, the idea of a mainframe and old languages (such as Fortran and B). And I like the idea of the roots of C. From where we came from. Also, it's a canonic language in one of my favorite cartoons.
 
 <img src="advanced bee++ coding.gif">
 
 ## Building B++
- Currently the B++ compiler only suports linux. To build from source you need only gcc >= 4.6.
+Currently the B++ compiler only suports linux. To build from source you need only gcc >= 4.6.
 * Run `build.sh` for debugging (this mode adds address sanitizers and disable optimizations);
 * Run `build_release.sh` for release compilation (optimized).
 
 ## Special thanks
- Thanks [Ginger Bill](https://twitter.com/TheGingerBill) and [Jonathan Blow](https://twitter.com/Jonathan_Blow) for being my programming-language designer heroes, and [Rui Ueyama](https://github.com/rui314) for making a good compiler building tutorial, the [chibicc](https://github.com/rui314/chibicc).
+Thanks [Ginger Bill](https://twitter.com/TheGingerBill) and [Jonathan Blow](https://twitter.com/Jonathan_Blow) for being my programming-language designer heroes, and [Rui Ueyama](https://github.com/rui314) for making a good compiler building tutorial, the [chibicc](https://github.com/rui314/chibicc).
 
 ## Learning B++
- Ok, so do you want to code your own little mess with B++? Cool. But first, what do you want to know?
+Ok, so do you want to code your own little mess with B++? Cool. But first, what do you want to know?
 - [Just show me the basics](doc/Tutorial/BASIC.md)
 - [An overview of all is a good start](doc/Tutorial/INTERMEDIARY.md)
 - [I want to implement my own B++ compiler in B++](doc/Tutorial/ADVANCED.md)
