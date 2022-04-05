@@ -1,17 +1,17 @@
 # B++ or bee++
-The good and old B, but better, smarter, easier and maybe faster. B++ is a compiled, kind of functional, pseudo no-typed, low-level programming language.
+The good and old B, but better, smarter and maybe faster. B++ is a compiled, kind of functional, pseudo no-typed, low-level programming language.
 
 ## Disclaimer
 B++ unfortunatelly is not retro-compatible with the old codes - at least not them all. You still are able to compile some examples, but most of them are not possible, both by the changes B++ does and by the fact the compiler is not targeted to the 36-bit mainframes. 
 
 ## Why you are creating B++?
-B++ is Influenced by B, C, Jai, Odin, Rust, Fortran, and Haskell. The syntax, simplicity and utility of B/C, the philosophy and design principles of Jai, Odin and Rust, and some paradigm ideas from Fortran and Haskell. At the end it's just a personal project that I hope someone will find interesting.
+B++ is Influenced by B, C, Jai, Odin, Rust and Haskell. The syntax, simplicity and utility of B/C, the philosophy and design principles of Jai, Odin and Rust, and some paradigm ideas from Haskell. At the end it's just a personal project that I hope someone will find interesting.
 
 ## What was B?
-[B](https://en.wikipedia.org/wiki/B_(programming_language)) is the C programming language's mother. Treat arrays as pointers and increment or decrement pointers came from B (actually from [BCPL](https://en.m.wikipedia.org/wiki/BCPL), but _meeeh_). It was a lang written by the our dear [Dennis Ritchie](https://en.wikipedia.org/wiki/Dennis_Ritchie) for the 36-bit mainframes (aka really lit old school computers).
+[B](https://en.wikipedia.org/wiki/B_(programming_language)) is the C programming language's mother. Treat arrays as pointers and increment or decrement pointers came from B (actually from [BCPL](https://en.m.wikipedia.org/wiki/BCPL), but _meeeh_). It was a lang written by our dear [Dennis Ritchie](https://en.wikipedia.org/wiki/Dennis_Ritchie) for the 36-bit mainframes (aka really lit old school computers).
 
 ## What's new?
-Glad you asked. Now we have structures (no more variables named with dots), because now we have a (really weak) type system, and enums!
+Glad you asked. Now we have structures (no more variables named with dots!), because now we have a (really weak) type system, and enums!
 ```c
 struct foo {
     x, y;
@@ -65,7 +65,7 @@ Status: work in progress (37.5% completed)
     - [x] lexer
 - [ ] Prossessing
     - [ ] syntax analysis (check semantics)
-    - [ ] parser (check if everything makes sense and gen final ast)
+    - [ ] parser (check if everything is in the right place)
     - [ ] subcompilations (require libs and extern files)
 - [ ] Codegen
     - [ ] optimizations
@@ -77,14 +77,14 @@ Status: work in progress (60% completed)
     - [ ] reserved keywords
     - [x] default formating
 - [ ] Design
-    - [x] philosophy (radically changed)
+    - [x] philosophy
     - [ ] how to implement
         - [ ] frontend (still studying compilers)
         - [x] backend (32-bit NASM)
 ### Documentation
 Status: work in progress (33% completed)
-- [ ] Tutorial
-- [x] Code commenting
+- [ ] Tutorial (grows as language design decisions are taken)
+- [ ] Code commenting (work in progress)
 - [ ] Additional code documentation
 
 ## Principles of Design
@@ -101,10 +101,10 @@ Code must be understandable for both humans and computers. And code must be simp
  I want a program that instead of crash and obligate me to debug hours and hours, just to figure out that an array was being read out of bounds, warns me about where, when and how an invalid read/write happened. But also, when everything is cleaned up and well optimized, I want to make a unsafe-checked program that runs as fast as possible. That implies in:
 * typesafe and fixed and simple ruleset for all types during compile-time.
 * memory safe during run-time in debug mode.
-* massive optimization while producing understandable ASM code in release mode.
+* massive optimization while producing understandable NASM code in release mode.
 
 ### 3: Reliable and lightweight
- Also, the code must be efficient and well developed by the user, to then be well optimized and implemented by the compiler. Both user and program should be reliable for each other. That implies in:
+ Also, the code must be efficient and well developed by the developer, to then be well optimized and implemented by the compiler. Both developer and program should be reliable for each other. That implies in:
 * total control over optimizations.
 * compiler complaining about ambiguous or expensive algorithms.
 * simple yet complete error messages about errors in compile and run-times.
@@ -120,7 +120,7 @@ Code must be understandable for both humans and computers. And code must be simp
 * Run `build_release.sh` for release compilation (optimized).
 
 ## Special thanks
- Thanks [Ginger Bill](https://twitter.com/TheGingerBill) and [Jonathan Blow](https://twitter.com/Jonathan_Blow) for being my programming-language designer heroes, and [rui314](https://github.com/rui314) for making a good compiler building tutorial, the [chibicc](https://github.com/rui314/chibicc).
+ Thanks [Ginger Bill](https://twitter.com/TheGingerBill) and [Jonathan Blow](https://twitter.com/Jonathan_Blow) for being my programming-language designer heroes, and [Rui Ueyama](https://github.com/rui314) for making a good compiler building tutorial, the [chibicc](https://github.com/rui314/chibicc).
 
 ## Learning B++
  Ok, so do you want to code your own little mess with B++? Cool. But first, what do you want to know?
