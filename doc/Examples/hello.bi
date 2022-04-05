@@ -1,5 +1,5 @@
 /* hello world */
-main(args, argc){
+main(){
     putc('hell');
     putc('o!*n');
 };
