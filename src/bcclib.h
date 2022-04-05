@@ -17,3 +17,7 @@ typedef enum boolean {F, T} bool;
 
 // nil for C
 #define nil ((void *) 0)
+
+void *alloc(size_t size);
+
+#include "bcclib.c"
