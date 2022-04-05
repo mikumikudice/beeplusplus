@@ -16,9 +16,9 @@ main(){
 ```
 
 Note that:
-* scape char is star (`*`).<br/>
-* the function scope ends with a semicolon (`;`).<br/>
-* the literal `'hi!*n'` is a _char_ literal, not a string.<br/>
+* scape char is star (`*`).
+* the function scope ends with a semicolon (`;`).
+* the literal `'hi!*n'` is a _char_ literal, not a string.
 
 ### Comments
 Single lined and multi-lined comments.
@@ -35,7 +35,7 @@ foo = 45;
 ```
 
 ### Types definition
- There are only three types in B, that all are subsets of each other. All of them 32 bits (double word). They are `char`, `pntr` (pointer) and `auto` (unsigned integer). You can assign a `char` to `auto`, but not the opposite. A `pntr` can only be assigned by an address (`&char`, `&auto` or `&pntr`) or by another pointer. And finally, `char` can only be assigned with literals, a pointer value (see [pointers](#pointers)) or another `char`. You can also define (multi-dimensional) arrays (both C-like and modern ones) of these types.
+ There are only three types in B, that all are subsets of each other. All of them 32 bits (double word). They are `char`, `pntr` (pointer) and `auto` (signed integer). You can assign a `char` to `auto`, but not the opposite. A `pntr` can only be assigned by an address (`&char`, `&auto` or `&pntr`) or by another pointer. And finally, `char` can only be assigned with literals, a pointer value (see [pointers](#pointers)) or another `char`. You can also define (multi-dimensional) arrays (both C-like and modern ones) of these types.
 ```c
 char _hi = 'hi!';
 auto foo, bar = 4, 5; // multiple assignments are also valid
@@ -51,7 +51,8 @@ the = 0xa145b6; // what the heck, extremely prohibited! Only pointers or unary &
 ```
 
 Note that:
-* pointers don't have to be initialized on declaration, but they may not be used before initializing. This is ensured at compile-time. The default value of pointers is `nil`. See [Pointers](BASIC.md#pointers) for further explanation.<br/>
+* pointers don't have to be initialized on declaration, but they may not be used before initializing. This is ensured at compile-time. The default value of pointers is `nil`. See [Pointers](BASIC.md#pointers) for further explanation.
+* there is no float type by default.
 
 ### Literals
 It's just a short topic to talk about strings, essentially.
@@ -63,9 +64,9 @@ pntr str = "hi!";
 ```
 
 Please also note that:
-* literal strings are immutable, just like in C.<br/>
-* `.len` and `.cap` of literal strings are allways the same.<br/>
-* these strings are stored in the `.rodata` section of the produced NASM code (check the [advanced tutorial](ADVANCED.md) for further information).<br/>
+* literal strings are immutable, just like in C.
+* `.len` and `.cap` of literal strings are allways the same.
+* these strings are stored in the `.rodata` section of the produced NASM code (check the [advanced tutorial](ADVANCED.md) for further information).
 
 It's also a good idea to emphasize that the last bit of the 32 avaliable for each variable are used to indicate if the value of a pointer is a function / structure (see more on [pointers](#pointers)) or a variable address, or a distinct value or a normal one when it's used by a variable, so at the end you have actually 31-bit variables.
 
@@ -91,9 +92,9 @@ fibonacci[6] = 13;        // invalid. write out of bounds
 ```
 
 Note that:
-* there is no dynamic arrays by default.<br/>
-* the size of c-like arrays are deduced by the assignment, therefore, can't be defined without initialization.<br/>
-* only default arrays has the `len` field, because these are implemented as structures behind-the-scenes.<br/>
+* there is no dynamic arrays by default.
+* the size of c-like arrays are deduced by the assignment, therefore, can't be defined without initialization.
+* only default arrays has the `len` field, because these are implemented as structures behind-the-scenes.
 
 Also, it's good to assert that in debug mode, the compiler will work like this with C-like pointers overflow:
 ```c
@@ -138,10 +139,10 @@ printf("%s*n", foo);
 ```
 
 Note that:
-* once structures don't create types, you need a pointer to hold your instances. Also, it's important to say that your structures are passed by reference on assignments, not by value.<br/>
-* actually, this code won't compile because the structure `string` is a built-in structure in B++ (this and the array "type" are the only built-in structures).<br/>
-* as deducible by the last point, you can't redefine structures' fields in B++, except for the `val` field. <br/>
-* `printf` by default treat the corresponding argument to `%s` as a structure. If you're giving a C-like string, use the `%a` instead. It stands for ASCII.<br/>
+* once structures don't create types, you need a pointer to hold your instances. Also, it's important to say that your structures are passed by reference on assignments, not by value.
+* actually, this code won't compile because the structure `string` is a built-in structure in B++ (this and the array "type" are the only built-in structures).
+* as deducible by the last point, you can't redefine structures' fields in B++, except for the `val` field.
+* `printf` by default treat the corresponding argument to `%s` as a structure. If you're giving a C-like string, use the `%a` instead. It stands for ASCII.
 * this kind of special treatment, the string literal and the enum sentence are the only code-sugars in B++.
 
 ### Constants
@@ -164,10 +165,10 @@ main (){ // the function syntax is just a constant assignment: ``main :: (){}``
 ```
 
  Note that:
-* to access outer scopes' namespaces you may use `extrn`, this allow us to know for sure if an function is pure, what values a piece of code need to work when refactoring and kind of creates a type of local encapsulation. This idea is borrowed from Jai (thanks John).<br/>
-* functions can only access global fields with extrn.<br/>
-* functions are pointers and as such you may treat them.<br/>
-* in REAL world, this code would never compile, since it has illegal code, but for didactic reasons let's act as it would do so.<br/>
+* to access outer scopes' namespaces you may use `extrn`, this allow us to know for sure if an function is pure, what values a piece of code need to work when refactoring and kind of creates a type of local encapsulation. This idea is borrowed from Jai (thanks John).
+* functions can only access global fields with extrn.
+* functions are pointers and as such you may treat them.
+* in REAL world, this code would never compile, since it has illegal code, but for didactic reasons let's act as it would do so.
 
 ### Enums and distincts
 Distinct values are just like other values when talking about size and arithmetic (despite their value being limited to 16-bit values), but in boolean expressions is when it shines. By turning a distinct value you are saying "hey, compiler. Please do not treat this value as a number when comparing to other things. Instead, treat it as a constant token". Fallowing are the uses for this:
@@ -190,8 +191,8 @@ if today * 1 == 1 {
 ```
 
  Note that:
-* you may noticed a new thing: the if/else blocks without parenthesis (also the `elif` keyword). You can check these on [control-structures](BASIC.md#control-structures).<br/>
-* doing mathematics on distinct values works normally, resulting in non distinct values.<br/>
+* you may noticed a new thing: the if/else blocks without parenthesis (also the `elif` keyword). You can check these on [control-structures](BASIC.md#control-structures).
+* doing mathematics on distinct values works normally, resulting in non distinct values.
 
  Enums are basically the same thing. Actually, just a short way to define multiple context-related distinct values, just like that:
 ```c
@@ -262,9 +263,9 @@ switch(x){
 ```
  
 Note that:
-* there is no `case` or `default` keywords. Instead, labels defines the cases. The empty case (`_`) replaces the default case.<br/>
-* there is no need to use `break`, because there is no fallthrough. Also, you may have noticed that you can handle multiple cases using commas.<br/>
-* there is the `break` keyword, but it's used in the next section.<br/>
+* there is no `case` or `default` keywords. Instead, labels defines the cases. The empty case (`_`) replaces the default case.
+* there is no need to use `break`, because there is no fallthrough. Also, you may have noticed that you can handle multiple cases using commas.
+* there is the `break` keyword, but it's used in the next section.
 
 #### FOR loop
  The `for` loop has two syntaxes, that you may already know. These are the repetition and interaction modes. The repetition is the fallowing one:
@@ -274,7 +275,7 @@ for auto c = 0; c < 256; c += 1 { // just like the c for loop
 };
 ```
  Note that:
-* you may use the `auto` or `char` keywords when using this mode, because unlike the next one, you can't infer the type from the value (actually you can, but a good automatic inference is hard to implement and sometimes also hard to understand).<br/>
+* you may use the `auto` or `char` keywords when using this mode, because unlike the next one, you can't infer the type from the value (actually you can, but a good automatic inference is hard to implement and sometimes also hard to understand).
 
 The interaction mode is like this:
 ```c
@@ -285,8 +286,8 @@ for i in list { // no need to use `auto`
 };
 ```
  Note that:
-* it's not needed to define `i` with `auto` or something like that because it is already intended to be a definition, and the type is inferred from `list`, so no need for unnecessary keywords.<br/>
-* only these two modes are allowed in B++. The compiler will complain if you don't fallow any of these syntaxes.<br/>
+* it's not needed to define `i` with `auto` or something like that because it is already intended to be a definition, and the type is inferred from `list`, so no need for unnecessary keywords.
+* only these two modes are allowed in B++. The compiler will complain if you don't fallow any of these syntaxes.
 
 You can use some magic asm jumps and do these basic things too:
 ```c
@@ -323,10 +324,10 @@ if(foo == 6){
 ```
 
 Please note that:
-* there is no `*ptr` or `*(&var)` and things like that. Once pointers have strict assignment, it's safe to remove these things, "because the garbage of a pointer is the teasure of a variable".<br/>
-* there is no arithmetic with default pointers.<br/>
-* if you are a little smart you may have asked "can I pick the address of a pointer?", and the answer is YES!<br/>
-* `nil` is the only built-in dist in B++. See [Enums and distincts](BASIC.md#enums-and-distincts) for more information.<br/>
+* there is no `*ptr` or `*(&var)` and things like that. Once pointers have strict assignment, it's safe to remove these things, "because the garbage of a pointer is the teasure of a variable".
+* there is no arithmetic with default pointers.
+* if you are a little smart you may have asked "can I pick the address of a pointer?", and the answer is YES!
+* `nil` is the only built-in dist in B++. See [Enums and distincts](BASIC.md#enums-and-distincts) for more information.
 
 Actually, as pointers can hold variables addresses, structures and functions, you can do all the things you do with the three with pointers:
 ```c
@@ -364,10 +365,10 @@ printf("%d*n", var[2][1]);
 ```
 
 Note that:
-* `.val` is always the pointer's value, i.e. the C-like pointer to the array, function or variable.<br/>
-* `.len` is allways the number of fields (excluding the `.val`, `.len` and `.cap` fields).<br/>
-* `.cap` is always zero for structures other than string and array.<br/>
-* This is a read-safety feature that is not intend to be used by the programmer in arbitrary ways.<br/>
+* `.val` is always the pointer's value, i.e. the C-like pointer to the array, function or variable.
+* `.len` is allways the number of fields (excluding the `.val`, `.len` and `.cap` fields).
+* `.cap` is always zero for structures other than string and array.
+* This is a read-safety feature that is not intend to be used by the programmer in arbitrary ways.
 
 To pass a pointer to a function as a argument, you need to mark that parameter as so:
 ```c
@@ -386,7 +387,7 @@ main(){
 ```
 
 Note that:
-* "%r" stands for record and prints arrays.<br/>
+* "%r" stands for record and prints arrays.
 
 # External code
 To can include functions and constants from the standard library, other B++ files or from assembly files (no FFI for now). Everytime you put an `extrn` statement at the global scope you are asking the compiler for first search in the standard library, then for other files in the same directory, and at the end for assembly files in the same directory. Once there are no global variables (only within functions) in B++, it is always safe to import extern B++ code because it will work as a library or module. For example:
@@ -422,7 +423,7 @@ This code prints:
     [printing from my-stdlib] calling extern function!
 
 Note that:
-* Both `stdio` and `stdstr` are not needed to be specified once it's all considered the standard library, so the compiler would already search for those anyway.<br/>
+* Both `stdio` and `stdstr` are not needed to be specified once it's all considered the standard library, so the compiler would already search for those anyway.
 
 # Compilation flags
 In B++ you don't pass the compilation configuration to the compiler by the command line, you pass it through the file itself, by doing this:

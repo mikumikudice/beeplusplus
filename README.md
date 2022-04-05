@@ -4,8 +4,11 @@ The good and old B, but better, smarter and maybe faster. B++ is a compiled, kin
 ## Disclaimer
 B++ unfortunatelly is not retro-compatible with the old codes - at least not them all. You still are able to compile some examples, but most of them are not possible, both by the changes B++ does and by the fact the compiler is not targeted to the 36-bit mainframes. 
 
-## Why you are creating B++?
-B++ is Influenced by B, C, Jai, Odin, Rust and Haskell. The syntax, simplicity and utility of B/C, the philosophy and design principles of Jai, Odin and Rust, and some paradigm ideas from Haskell. At the end it's just a personal project that I hope someone will find interesting.
+# Why are you creating B++?
+I think I'm done with C. But I still like some of it's features (weak typing, low-level controll, etc), as much as I hate some others (Undefined Behavior, ABI conflicts, etc). I want something new yet old-like. I want to create something that fits better than C for my daily work. At the end it's just a personal project that I hope someone will find interesting.
+
+## Where do B++ come from?
+B++ is Influenced by B, C, Jai, Odin, Rust, Pony and Haskell. The syntax, simplicity and utility of B/C, the philosophy and design principles and ideas from Jai, Odin, Rust and Pony and some paradigm ideas from Haskell.
 
 ## What was B?
 [B](https://en.wikipedia.org/wiki/B_(programming_language)) is the C programming language's mother. Treat arrays as pointers and increment or decrement pointers came from B (actually from [BCPL](https://en.m.wikipedia.org/wiki/BCPL), but _meeeh_). It was a lang written by our dear [Dennis Ritchie](https://en.wikipedia.org/wiki/Dennis_Ritchie) for the 36-bit mainframes (aka really lit old school computers).
