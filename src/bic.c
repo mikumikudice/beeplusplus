@@ -118,15 +118,19 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
         this = temp->next;
 
         pout = nodet_to_str(temp);
-        printf("%s\n", pout);
+        printf("%s", pout);
         free(pout);
 
         if(temp == bast->end){
             free_node(temp);
             break;    
-        } else free_node(temp);
+        } else {
+            free_node(temp);
+            printf("\n");
+        }
     }
     free(bast);
+    printf("\n");
 
     tkn * tok, * old = nil;
     i64   cnt = EOTT->apdx;
@@ -153,10 +157,10 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
 }
 
 void free_node(node * n){
-    cnst u16 cnnt = 0;
     char * pout;
     if(!n->is_parent) free(n);
     else {
+        printf("\n");
         node * tmp = nil, *ths = n->stt;
         while(T){
             assert(ths != nil, nodet_to_str(n));
@@ -165,11 +169,12 @@ void free_node(node * n){
             ths = tmp->next;
 
             pout = nodet_to_str(tmp);
-            printf("%s\n", pout);
+            printf("%s; ", pout);
             free(pout);
 
             if(tmp == n->end){
                 free_node(tmp);
+                printf("\n");
                 break;
             } else free_node(tmp);
         }
@@ -238,7 +243,7 @@ void cmperr(imut char * err, tkn * arw, tkn * cmpl){
             fprintf(stderr, DEF);
         }
     }
-    fprintf(stderr, "press any key to exit...");
+    fprintf(stderr, "\nthe compilation failed.\nplease press any key to exit...");
     scanf("nothing");
     exit(-1);
 }

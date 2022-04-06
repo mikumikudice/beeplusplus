@@ -20,9 +20,9 @@
 #define tok_to_node(n, t){\
     n->next = alloc(sizeof(node));\
     n->next->last = n;\
+    n->next->type = t->type;\
+    n->next->vall = t;\
     n = n->next;\
-    n->type = t->type;\
-    n->vall = t;\
 }
 
 // code path rules
@@ -118,6 +118,8 @@ node * assign_r(tkn * c, bool prnd){
             pntr->next = validthnd(c->next, F);
             pntr->next->last = pntr;
             pntr = pntr->next;
+
+            prox = pntr->ltok->next;
 
             if(pntr == nil) cmperr(EXPVRHD, c->next, nil);
 
@@ -926,12 +928,16 @@ node * validthnd(tkn * c, bool is_nmsc){
 
     pntr->type = c->type;
     pntr->vall = c;
+    pntr->ltok = c;
 
     // value is an array indexing
     if(eq_sym(c->next, SYM_SQR, 0)){
         path->type = IDXING;
+        path->vall = c;
+        path->stt  = pntr;
         path->is_parent = T;
 
+        tok_to_node(pntr, c->next);
         tkn * innr = c->next->next;
 
         // this path fallows the syntax: foo[bar + ...] 
@@ -955,11 +961,14 @@ node * validthnd(tkn * c, bool is_nmsc){
         // assert syntax
         if(!eq_sym(pntr->ltok->next, SYM_SQR, 1))
             cmperr(UNEXPCT, pntr->ltok->next, nil);
-
-        else tok_to_node(pntr, pntr->ltok->next);
+        else {
+            tkn *ltok = pntr->ltok->next;
+            tok_to_node(pntr, pntr->ltok->next);
+            pntr->ltok = ltok;
+        }
 
         path->end = pntr;
-        path->ltok = pntr->last->ltok;
+        path->ltok = pntr->ltok;
         return path;
 
     // function call or function declaration
@@ -1101,6 +1110,9 @@ char * nodet_to_str(node * n){
         case ARGDEF  :
             strcpy(out, "ARGDEF");
             break;
+        case IDXING  :
+            strcpy(out, "IDXING");
+            break;
         case BODYDF:
             strcpy(out, "BODYDF");
             break;
@@ -1114,7 +1126,7 @@ char * nodet_to_str(node * n){
             strcpy(out, "CDHALT");
             break;
         default:
-            sprintf(out, "UNKNOWN [%d]", n->type);
+            sprintf(out, "UNKNOWN [%d/%s]", n->type, get_tokval(n->vall));
             break;
     }
     return out;
