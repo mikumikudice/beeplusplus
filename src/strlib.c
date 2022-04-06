@@ -156,12 +156,12 @@ char * str_sub(char * str, i64 i, i64 f){
     }
     // char slice
     if(i == f){
-        char * out = malloc(2);
+        char * out = alloc(2);
         sprintf(out, "%c", str[i]);
         return out;
     }
 
-    char * out = malloc(f - i + 1);
+    char * out = alloc(f - i + 1);
     for(u64 c = i; c <= f; c++){out[c - i] = str[c];}
 
     out[f - i] = '\0';
@@ -179,7 +179,7 @@ char * strgsub(char * str, const char * pat, char * sup){
     if(!strcmp(pat, sup)) return str;
 
     char * out =
-    malloc(strlen(str) + max(strlen(sup), 1) * strfndc(str, pat) + 1);
+    alloc(strlen(str) + max(strlen(sup), 1) * strfndc(str, pat) + 1);
     strcpy(out, str);
 
     u64 frst = strfnd(out, pat);
@@ -227,7 +227,7 @@ char * strtrim(char * str){
 }
 
 char * strpush(char * str, char * otr){
-    char * out = malloc(strlen(str) + strlen(otr) + 1);
+    char * out = alloc(strlen(str) + strlen(otr) + 1);
     strcpy(out, str);
     free(str);
 

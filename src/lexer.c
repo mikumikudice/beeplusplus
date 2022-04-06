@@ -65,84 +65,24 @@ u64 upow(u64 b, u64 p){
     return out;
 }
 
-// returns the given node as a string
-char * nodet_to_str(node * n){
-    char * out = malloc(128);
-    strcpy(out, "");
-    switch(n->type){ 
-        case KEYWORD :
-            sprintf(out, "KEYWORD %s", KEYWORDS[n->vall.num]);
-            break;
-        case INDEXER :
-            sprintf(out, "INDEXER %s", n->vall.str);
-            break;
-        case LITERAL :
-            sprintf(out, "LITERAL %lx", n->vall.num);
-            break;
-        case LSYMBOL :
-            sprintf(out, "LSYMBOL %s", SYMBOLS[n->vall.num].s);
-            break;
+// returns the token value as a string
+char * get_tokval(tkn * tok){
+    switch(tok->type){
+        case KEYWORD:
+            return KEYWORDS[tok->vall.num];
+        case INDEXER:
+            return tok->vall.str;
+        case LITERAL:            
+            return "LITERAL";
+        case LSYMBOL:
+            if(tok->vall.num >= arrlen(SYMBOLS)) return "OOB";
+            if(tok->apdx == 0) return SYMBOLS[tok->vall.num].s;
+            else return SYMBOLS[tok->vall.num].e;
         case OPERATOR:
-            sprintf(out, "OPERATOR %s", OPERATORS[n->vall.num]);
-            break;
-        case CONSTD  :
-            strcpy(out, "CONSTD");
-        case DEFINE  :
-            strcpy(out, "DEFINE");
-            break;
-        case ASSIGN  :
-            strcpy(out, "ASSIGN");
-            break;
-        case ARRDEF  :
-            strcpy(out, "ARRDEF");
-            break;
-        case STRDEF  :
-            strcpy(out, "STRDEF");
-            break;
-        case ENUMDF  :
-            strcpy(out, "ENUMDF");
-            break;
-        case STRUCT  :
-            strcpy(out, "STRUCT");
-            break;
-        case STTMNT  :
-            strcpy(out, "STTMNT");
-            break;
-        case EXPRSS  :
-            strcpy(out, "EXPRSS");
-            break;
-        case LABELD  :
-            strcpy(out, "LABELD");
-            break;
-        case JMPSTT  :
-            strcpy(out, "JMPSTT");
-            break;
-        case FUNDEF  :
-            strcpy(out, "FUNDEF");
-            break;
-        case FNCALL  :
-            strcpy(out, "FNCALL");
-            break;
-        case ARGDEF  :
-            strcpy(out, "ARGDEF");
-            break;
-        case BODYDF:
-            strcpy(out, "BODYDF");
-            break;
-        case EOSCPE:
-            strcpy(out, "EOSCPE");
-            break;
-        case CODEIS:
-            strcpy(out, "CODEIS");
-            break;
-        case CDHALT:
-            strcpy(out, "CDHALT");
-            break;
+            return OPERATORS[tok->vall.num];
         default:
-            sprintf(out, "UNKNOWN [%d]", n->type);
-            break;
+            return "NONE";
     }
-    return out;
 }
 
 // converts the string path to a hexadecimal value
@@ -165,7 +105,7 @@ u32 strtohex(char * data){
 // by placing the values in the .rodata segment of the nasm file
 u64 strtoptr(char * str){
     // init array if its nil
-    if(!sarr.arr) sarr.arr = malloc(sizeof(char *));
+    if(!sarr.arr) sarr.arr = alloc(sizeof(char *));
     for(u64 s = 0; s < sarr.len; s++){
         // return the known string value's index
         if(!strcmp(str, sarr.arr[s])) return s;
@@ -197,7 +137,7 @@ tkn * lexit(){
         // skip comment lines
         if(lsz == 0) continue;
 
-        char * src = malloc(lsz + 1);
+        char * src = alloc(lsz + 1);
         strcpy(src, code.arr[l]);
 
         bool isstr = F; // is the current sentence a string?
@@ -232,7 +172,7 @@ tkn * lexit(){
                     if(!isstr){
                         this.type = LITERAL;
 
-                        char * dummy = malloc(strlen(ctkn) + 1);
+                        char * dummy = alloc(strlen(ctkn) + 1);
                         strcpy(dummy, ctkn);
 
                         u64 len = arrlen(metachar);
@@ -240,6 +180,7 @@ tkn * lexit(){
                             dummy = strgsub(dummy,
                             metachar[mc].key, metachar[mc].val);
                         }
+
                         // it's a doubleword char
                         if(src[c] == metachar[0].val[0]){
                             // slice it
@@ -249,7 +190,10 @@ tkn * lexit(){
                                 free(temp);
                             }
                             this.vall.num = strtohex(dummy);
+                            this.apdx = DWCHAR;
+
                             free(dummy);
+
                         // it's a string
                         } else {
                             // store the string literals at a
@@ -260,6 +204,7 @@ tkn * lexit(){
                             if(sarr.arr[indx] != dummy) free(dummy);
 
                             this.vall.num = indx;
+                            this.apdx = STRING;
                         }
                         ctc = 0;
                         goto finish;
@@ -277,7 +222,6 @@ tkn * lexit(){
                 else if(ctc > 0){
                     // first close the buffer
                     ctkn[ctc] = '\0';
-
                     // resset the current token
                     // pointer to the beginning
                     ctc = 0;
@@ -345,6 +289,7 @@ tkn * lexit(){
                         if(hashexpr){
                             if(ish){
                                 this.type = LITERAL;
+                                this.apdx = NUMBER;
                                 sscanf(ctkn, "%x", &this.vall.num);
                             // invalid pattern
                             } else
@@ -354,9 +299,10 @@ tkn * lexit(){
                         else if(hasbinpr){
                             if(isb){
                                 this.type = LITERAL;
+                                this.apdx = NUMBER;
                                 this.vall.num = 0;
-                                u64 len = strlen(ctkn) - 2;
 
+                                u64 len = strlen(ctkn) - 2;
                                 for(u64 d = len; d > 1; d--){
                                     if(ctkn[d] == '1')
                                         this.vall.num += upow(2, d - 1);
@@ -369,7 +315,8 @@ tkn * lexit(){
                         else if(hasoctpr){
                             if(iso){
                                 this.type = LITERAL;
-                                sscanf(ctkn, "%lo", &this.vall.num);
+                                this.apdx = NUMBER;
+                                sscanf(ctkn + 2, "%lo", &this.vall.num);
                             // invalid pattern
                             } else
                                 cmperr(UNEXPCT, &this, nil);
@@ -381,7 +328,7 @@ tkn * lexit(){
                             // indexer
                             } else if(!isnumc(ctkn[0])){
                                 this.type = INDEXER;
-                                this.vall.str = malloc(strlen(ctkn) + 1);
+                                this.vall.str = alloc(strlen(ctkn) + 1);
                                 strcpy(this.vall.str, ctkn);
 
                             // invalid indexer name
@@ -485,7 +432,7 @@ tkn * lexit(){
 
                 // once the token is already on the chain,
                 // move to the current's next token
-                *next = malloc(sizeof(tkn));
+                *next = alloc(sizeof(tkn));
                 memcpy(*next, &this, sizeof(tkn));
 
                 if(EOTT->apdx == 0) EOTT->next = *next;

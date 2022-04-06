@@ -7,8 +7,8 @@
         fprintf(stderr, RED);\
         fprintf(stderr, "[ERROR]:");\
         fprintf(stderr, DEF);\
-        if(msg) fprintf(stderr, " `%s` failed! %s at %s#%d\n", #check, msg, __FILE__, __LINE__);\
-        else fprintf(stderr, " `%s` failed at %s#%d\n", #check, __FILE__, __LINE__);\
+        if(msg) fprintf(stderr, " `%s` failed! %s at %s:%d\n", #check, msg, __FILE__, __LINE__);\
+        else fprintf(stderr, " `%s` failed at %s:%d\n", #check, __FILE__, __LINE__);\
         exit(-1);\
     }
 
@@ -20,7 +20,8 @@ imut char KEYWORDS[][8] = {
     "next"  , "break" ,
     "typeof", "sizeof", "getval",
     "auto"  , "char"  , "pntr"  ,
-    "dist"  , "from"   , "in"   , "struct",
+    "dist"  , "from"  ,  "in"   , "as",
+    "struct",
 };
 enum {
     KW_IF  , KW_ELIF, KW_FOR, KW_SWITCH,  // true statements
@@ -29,10 +30,11 @@ enum {
     KW_GOTO, KW_EXTRN, KW_RETURN,         // expression holders
     KW_NEXT, KW_BREAK,                    // single ones
 
-    KW_TYPEOF, KW_SIZEOF, KW_GETVAL,      // function-like
+    KW_TYPEOF, KW_SIZEOF, KW_GETVAL ,     // function-like
 
     KW_AUTO, KW_CHAR, KW_PNTR,            // not statements
-    KW_DIST, KW_FROM, KW_IN  , KW_STRUCT,
+    KW_DIST, KW_FROM, KW_IN  , KW_AS,
+    KW_STRUCT,
 };
 
 u16 ldef[2] = {13, 15}; // local var's definition keywords
@@ -163,6 +165,12 @@ struct token {
     tkn *next, *last;
 };
 
+enum apendix_value {
+    NUMBER,
+    DWCHAR,
+    STRING,
+};
+
 // when tkn::next points to EOTT the token tree
 // is over. EOTT also holds the first token and
 // last tokens.
@@ -185,9 +193,10 @@ typedef enum formal_lang_rule {
     STTMNT,  EXPRSS ,         // evaluatable bodies
     LABELD,  JMPSTT ,         // goto statements
     FUNDEF,  FNCALL ,         // functions
-    ARGDEF,                   // arrays
+    ARGDEF,  IDXING ,         // arrays
     BODYDF,  EOSCPE ,         // code scope definition
     CODEIS,  CDHALT ,         // representative value (code itself)
+    COLLEC,  MIDREP ,         // collection of nodes
 } rule_t;
 
 /* Abstract Syntax Tree node            *\
@@ -205,18 +214,10 @@ struct ast_node {
     node *stt , *end;  // used for navigation
     tkn  *ftok, *ltok;
     u16   type;
-    aori  vall;
+    tkn  *vall;
+    u64   dcnt;        // only used by paths like define or fncall
     bool  is_parent;
 };
-
-#define grow_ast(ctxt) \
-    ctxt->ctxt = realloc(ctxt->ctxt, ((ctxt->clen++) + 1) * sizeof(astt))
-
-#define pushnode(p, c, t, ctxt)\
-    ctxt->ctxt[ctxt->clen].strt = p;\
-    ctxt->ctxt[ctxt->clen].path = c;\
-    ctxt->ctxt[ctxt->clen].path_t = t;\
-    grow_ast(ctxt)
 
 
 /* compiler output                       *\
@@ -258,20 +259,21 @@ tkn  *matchpair(tkn * c);
 void  hasscolon(node * out);
 
 // parser rules
-node * constd_r(tkn * c);
-node * define_r(tkn * c);
-node * assign_r(tkn * c, bool prnd);
-node * strdef_r(tkn * c);
-node * enumdf_r(tkn * c);
-node * struct_r(tkn * c);
-node * arrdef_r(tkn * c);
-node * sttmnt_r(tkn * c);
-node * exprss_r(tkn * c, bool prnd);
-node *fun_def_r(tkn * c);
-node *funcall_r(tkn * c);
-node *labeldf_r(tkn * c, bool is_swedish);
-node *jmp_stt_r(tkn * c);
-node *bodydef_r(tkn * c);
+node  *constd_r(tkn *c);
+node  *define_r(tkn *c);
+node  *assign_r(tkn *c, bool prnd);
+node  *strdef_r(tkn *c);
+node  *enumdf_r(tkn *c);
+node  *struct_r(tkn *c);
+node  *arrdef_r(tkn *c);
+node  *sttmnt_r(tkn *c);
+node  *exprss_r(tkn *c, bool prnd);
+node *fun_def_r(tkn *c);
+node *funcall_r(tkn *c);
+node *labeldf_r(tkn *c, bool is_swedish);
+node *jmp_stt_r(tkn *c);
+node *extrn_exp(tkn *c);
+node *validthnd(tkn *c, bool is_nmsc);
 
 // parser
 node * parse(tkn * tkns, cmod mode);

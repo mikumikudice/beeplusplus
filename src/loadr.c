@@ -8,7 +8,7 @@ u64 csz = LSIZE;
 stra load(FILE * fptr){
     stra out = {};
     out.lgrst = 0;
-    out.arr = malloc(sizeof(char *));
+    out.arr = alloc(sizeof(char *));
 
     char l = 0, o = 0;
     i64 cmtl = 0;
@@ -32,7 +32,7 @@ stra load(FILE * fptr){
     char last = 0;
 
     // init first line
-    out.arr[out.len] = malloc(LSIZE);
+    out.arr[out.len] = alloc(LSIZE);
 
     tkn arw;
     bool err = F;
@@ -83,7 +83,7 @@ stra load(FILE * fptr){
                     .line  = out.len,
                     .coln  = i,
                 };
-                char * msg = malloc(80);
+                char * msg = alloc(80);
                 sprintf(msg, "line too long! greater than %s%d bytes%s", YEL, LSIZE, DEF);
                 wrning(msg, &arrw, nil);
                 free(msg);
@@ -161,12 +161,12 @@ stra load(FILE * fptr){
             out.len++;
 
             if(iscmt and !isslc){
-                out.arr[out.len] = malloc(2);
+                out.arr[out.len] = alloc(2);
                 strcpy(out.arr[out.len], "");
             } else {
                 // resset length
                 csz = LSIZE;
-                out.arr[out.len] = malloc(LSIZE);
+                out.arr[out.len] = alloc(LSIZE);
             }
         }
     }

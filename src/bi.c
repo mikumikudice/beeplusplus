@@ -25,7 +25,7 @@ int main(i32 argc, char ** args){
         );
         printf(
             "NOTE:\n to change output file name or give"\
-            " compiler args, put in the source file.\nsee"\
+            " compiler args, put it in the source file.\nsee"\
             " the docs (%s)\nto know how to do so.\n", TUTL
         );
         return 0;
@@ -52,7 +52,7 @@ int main(i32 argc, char ** args){
         }
 
         // create a mutable and freeable copy of the file name
-        char * lddf = malloc(strlen(args[2]) + 1);
+        char * lddf = alloc(strlen(args[2]) + 1);
         strcpy(lddf, args[2]);
 
         // the main module file is the first file
