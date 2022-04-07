@@ -111,7 +111,6 @@ node * assign_r(tkn * c, bool prnd){
             pntr->next->last = pntr;
             pntr = pntr->next;
             prox = pntr->ltok->next;
-
         // another sentence
         } else {
             // push righthand
@@ -119,13 +118,13 @@ node * assign_r(tkn * c, bool prnd){
             pntr->next->last = pntr;
             pntr = pntr->next;
 
-            prox = pntr->ltok->next;
-
             if(pntr == nil) cmperr(EXPVRHD, c->next, nil);
 
             // foo = bar + buzz, egg = bar + spam, ...
             // ................^
             //                 you are here
+
+            prox = pntr->ltok->next;
 
             if(eq_sym(prox, SYM_COM, 0)
             or eq_sym(prox, SYM_CLN, 0)) goto finish;
@@ -162,7 +161,8 @@ node * assign_r(tkn * c, bool prnd){
             pntr->ltok = prox;
         }
         prox = pntr->ltok;
-    }
+    // syntax error
+    } else cmperr(UNEXPCT, c->next, nil);
 
     finish:
     // check for multiple definitions
@@ -986,6 +986,10 @@ node * validthnd(tkn * c, bool is_nmsc){
         path->ltok = pntr->ltok;
         return path;
 
+    // structure literal assignment
+    } else if(eq_sym(c->next, SYM_BRA, 0)){
+        assert(F, "structure literals not implemented yet!");
+
     // function call or function declaration
     } else if(eq_sym(c->next, SYM_PAR, 0)){
         free(path);
@@ -1219,7 +1223,7 @@ node *parse(tkn * tkns, cmod mode){
             tok = pntr->ltok;
 
         // otherwise is not
-        } else cmperr(ALONEXP, tok->last, nil);
+        } else cmperr(UNEXPCT, tok, nil);
         nxt(tok);
 
 

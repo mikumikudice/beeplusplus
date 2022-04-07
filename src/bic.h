@@ -19,9 +19,9 @@ imut char KEYWORDS[][8] = {
     "goto"  , "extrn" , "return",
     "next"  , "break" ,
     "typeof", "sizeof", "getval",
+    "struct", "enum"  ,
     "auto"  , "char"  , "pntr"  ,
     "dist"  , "from"  ,  "in"   , "as",
-    "struct",
 };
 enum {
     KW_IF  , KW_ELIF, KW_FOR, KW_SWITCH,  // true statements
@@ -31,19 +31,21 @@ enum {
     KW_NEXT, KW_BREAK,                    // single ones
 
     KW_TYPEOF, KW_SIZEOF, KW_GETVAL ,     // function-like
+    KW_STRUCT, KW_ENUM,                   // other statements
 
-    KW_AUTO, KW_CHAR, KW_PNTR,            // not statements
-    KW_DIST, KW_FROM, KW_IN  , KW_AS,
-    KW_STRUCT,
+    KW_AUTO  , KW_CHAR, KW_PNTR,          // not statements
+    KW_DIST  , KW_FROM, KW_IN  , KW_AS,
+    
 };
 
-u16 ldef[2] = {13, 15}; // local var's definition keywords
 u16 sttt[2] = {00,  9}; // statement keywords
-u16 trus[2] = {00,  3};
-u16 body[2] = {04,  4};
-u16 hldr[2] = {05,  7};
-u16 sngl[2] = { 8,  9};
-u16 funl[2] = {10, 12};
+u16 trus[2] = {00,  3}; // true statements
+u16 body[2] = {04,  4}; // body holder statements
+u16 hldr[2] = {05,  7}; // expression holder statements
+u16 sngl[2] = { 8,  9}; // single statements
+u16 funl[2] = {10, 12}; // function-like statements
+u16 othr[2] = {13, 14}; // other statements
+u16 ldef[2] = {15, 17}; // local var's definition keywords
 
 // list of operators
 imut char OPERATORS[][4] = {
@@ -66,10 +68,10 @@ imut char OPERATORS[][4] = {
     ".."          // range operator
 };
 
-u16 asgn[2] = {0 , 10}; // assignment operators
-u16 eqlt[2] = {11, 16}; // equality operators
-u16 arth[2] = {17, 21}; // arithmetic operators
-u16 unry[2] = {20, 22}; // unary operators
+u16 asgn[2] = {0 , 11}; // assignment operators
+u16 eqlt[2] = {12, 17}; // equality operators
+u16 arth[2] = {18, 22}; // arithmetic operators
+u16 unry[2] = {22, 23}; // unary operators
 u16 btws[2] = {23, 28}; // bitwise operators
 u16 blan[2] = {29, 31}; // boolean operators
 
