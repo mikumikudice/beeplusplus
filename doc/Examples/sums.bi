@@ -1,9 +1,10 @@
 /* do some basic math */
 extrn printf;
 
-main(){
-    auto x = 3;
-    auto y = 4;
+main([args]){
+    auto x = args[0];
+    auto y = args[1];
+
     x += y + (3 - 1);
     x /= 3;
 
