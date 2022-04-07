@@ -193,7 +193,8 @@ typedef enum formal_lang_rule {
     STTMNT,  EXPRSS ,         // evaluatable bodies
     LABELD,  JMPSTT ,         // goto statements
     FUNDEF,  FNCALL ,         // functions
-    ARGDEF,  IDXING ,         // arrays
+    PARAMT,  PPARAM ,         // types of function parameters
+    IDXING,                   // arrays
     BODYDF,  EOSCPE ,         // code scope definition
     CODEIS,  CDHALT ,         // representative value (code itself)
     COLLEC,  MIDREP ,         // collection of nodes

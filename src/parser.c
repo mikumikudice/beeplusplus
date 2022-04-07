@@ -334,7 +334,6 @@ node * exprss_r(tkn * c, bool prnd){
             if(eq_sym(c->next, SYM_PAR, 0)){
                 // * c->next->next => <opr> >> ( >> <lhd>
                 tkn * rhnd = c->next->next;
-                tok_to_node(pntr, rhnd->last);
 
                 // righthand is a `(<opr> foo)` path
                 if(rhnd->type == OPERATOR){
@@ -397,10 +396,10 @@ node * exprss_r(tkn * c, bool prnd){
 
     // last syntax check
     if(prnd){
-        if(eq_sym(path->ltok->next, SYM_PAR, 1)){
-            tok_to_node(pntr, path->ltok->next);
+        // move ltok pointer forward
+        if(eq_sym(path->ltok->next, SYM_PAR, 1))
             path->ltok = path->ltok->next;
-        }
+        // syntax error
         else cmperr(EXPCTDP, path->ltok->next, nil);
     }
 
@@ -632,12 +631,9 @@ node * fun_def_r(tkn * c){
     pntr->vall = c->last;
     pntr->is_parent = F;
 
-    // opening parentheses
-    tok_to_node(pntr, c);
-
     // args is not empty
     if(eoa != c->next){
-        bool which = 0;
+        bool which = F, isptr = F;
         for(tkn * t = c->next; t != eoa; t = t->next){
             switch (t->type){
                 case INDEXER:
@@ -645,6 +641,9 @@ node * fun_def_r(tkn * c){
                         which = T;
                         // default function arguments or computation on assignment
                         if(t->next->type == OPERATOR){
+                            // do not allow operations on pointers
+                            if(isptr) cmperr(NOPTRAR, t->next, nil);
+
                             if(!eq_opr_range(t->next, asgn))
                                 cmperr(NOTASGN, t->next, nil);
 
@@ -655,26 +654,50 @@ node * fun_def_r(tkn * c){
                             t = exp->ltok;
 
                         // just the parameter
-                        } else tok_to_node(pntr, t);
+                        } else {
+                            tok_to_node(pntr, t);
+
+                            // handle pointer definitions
+                            if(isptr){
+                                if(eq_sym(t->next, SYM_SQR, 1)){
+                                    isptr = F;
+                                    pntr->type = PPARAM;
+                                // syntax error
+                                } else cmperr(EXPPPAR, t->next, 
+                                    &(tkn){.vall.str = PARAMPT, .apdx = 1}
+                                );
+                                // skip this symbol
+                                t = t->next;
+
+                            } else pntr->type = PARAMT;
+                        }
                     }
                     else cmperr(UNEXPCT, t, nil);
                     break;
-
                 case LSYMBOL:
-                    if(which) which = F;
-                    else cmperr(UNEXPCT, t, nil); 
+                    // just a comma
+                    if(t->vall.num == SYM_COM){
+                        if(which) which = F;
+                        else cmperr(UNEXPCT, t, nil); 
 
-                    if(!eq_sym(t, SYM_COM, 0))
-                        cmperr(UNEXPCT, t, nil);
-                    break;
+                        if(!eq_sym(t, SYM_COM, 0))
+                            cmperr(UNEXPCT, t, nil);
+                        break;
+                    // the parameter is a pointer
+                    } else if(eq_sym(t, SYM_SQR, 0)){
+                        if(!which) {
+                            isptr = T;
+                            continue;
+                        // syntax error
+                        } else cmperr(UNEXPCT, t,
+                            &(tkn){.vall.str = PARAMPT, .apdx = 1}
+                        );
+                    }
                 default:
                     cmperr(UNEXPCT, t, nil);
             }
         }
     }
-
-    // closing parentheses
-    tok_to_node(pntr, eoa);
 
     // validate the body of the function
     node *body = parse(eoa->next->next, SCOPE);
@@ -708,9 +731,6 @@ node * funcall_r(tkn * c){
     // assert keyword type
     if(pntr->type == KEYWORD && !eq_kwd(c, funl))
         cmperr(NOTFLKW, c, nil);
-
-    // opening parentheses
-    tok_to_node(pntr, c->next);
     
     // the body is a single line
     if(eoa != c->next->next){
@@ -762,8 +782,6 @@ node * funcall_r(tkn * c){
             }
         }
     }
-    // closing parentheses
-    tok_to_node(pntr, eoa);
 
     path->ltok = eoa;
     path->end = pntr;
@@ -920,6 +938,7 @@ node * extrn_exp(tkn *c){
     return path;
 }
 
+// validates path as a righthand or lefthand if ``is_nmsc`` is defined
 node * validthnd(tkn * c, bool is_nmsc){
     node * path = alloc(sizeof(node));
     node * pntr = alloc(sizeof(node));
@@ -937,7 +956,6 @@ node * validthnd(tkn * c, bool is_nmsc){
         path->stt  = pntr;
         path->is_parent = T;
 
-        tok_to_node(pntr, c->next);
         tkn * innr = c->next->next;
 
         // this path fallows the syntax: foo[bar + ...] 
@@ -961,11 +979,8 @@ node * validthnd(tkn * c, bool is_nmsc){
         // assert syntax
         if(!eq_sym(pntr->ltok->next, SYM_SQR, 1))
             cmperr(UNEXPCT, pntr->ltok->next, nil);
-        else {
-            tkn *ltok = pntr->ltok->next;
-            tok_to_node(pntr, pntr->ltok->next);
-            pntr->ltok = ltok;
-        }
+        // move ltok pointer forward
+        else pntr->ltok = pntr->ltok->next;
 
         path->end = pntr;
         path->ltok = pntr->ltok;
@@ -1052,78 +1067,78 @@ char * nodet_to_str(node * n){
     strcpy(out, "");
     switch(n->type){ 
         case KEYWORD :
-            sprintf(out, "KEYWORD %s", KEYWORDS[n->vall->vall.num]);
+            sprintf(out, "KEYWORD [%s]", KEYWORDS[n->vall->vall.num]);
             break;
         case INDEXER :
-            sprintf(out, "INDEXER %s", n->vall->vall.str);
+            sprintf(out, "INDEXER [%s]", n->vall->vall.str);
             break;
         case LITERAL :
             if(n->vall->apdx == STRING)
-                sprintf(out, "LITERAL \"%s\"", sarr.arr[n->vall->vall.num]);
+                sprintf(out, "LITERAL [\"%s\"]", sarr.arr[n->vall->vall.num]);
             else
-                sprintf(out, "LITERAL %lx", n->vall->vall.num);
-            break;
-        case LSYMBOL :
-            sprintf(out, "LSYMBOL %s", SYMBOLS[n->vall->vall.num].s);
+                sprintf(out, "LITERAL [%lx]", n->vall->vall.num);
             break;
         case OPERATOR:
-            sprintf(out, "OPERATOR %s", OPERATORS[n->vall->vall.num]);
+            sprintf(out, "OPERATOR [%s]", OPERATORS[n->vall->vall.num]);
             break;
         case CONSTD  :
-            strcpy(out, "CONSTD");
+            strcpy(out, "CONST. DEF.");
         case DEFINE  :
-            strcpy(out, "DEFINE");
+            strcpy(out, "NAMESPACE DEF.");
             break;
         case ASSIGN  :
-            strcpy(out, "ASSIGN");
+            strcpy(out, "ASSIGNMENT");
             break;
         case ARRDEF  :
             strcpy(out, "ARRDEF");
             break;
         case STRDEF  :
-            strcpy(out, "STRDEF");
+            strcpy(out, "STRUCTURE DEF");
             break;
         case ENUMDF  :
-            strcpy(out, "ENUMDF");
+            strcpy(out, "ENUM DEF.");
             break;
         case STRUCT  :
             strcpy(out, "STRUCT");
             break;
         case STTMNT  :
-            strcpy(out, "STTMNT");
+            strcpy(out, "STATEMENT");
             break;
         case EXPRSS  :
-            strcpy(out, "EXPRSS");
+            strcpy(out, "EXPRESION");
             break;
         case LABELD  :
-            strcpy(out, "LABELD");
+            strcpy(out, "LABEL");
             break;
         case JMPSTT  :
-            strcpy(out, "JMPSTT");
+            strcpy(out, "JUMP");
             break;
         case FUNDEF  :
-            strcpy(out, "FUNDEF");
+            strcpy(out, "FUNCTION DEF.");
             break;
         case FNCALL  :
-            strcpy(out, "FNCALL");
-            break;
-        case ARGDEF  :
-            strcpy(out, "ARGDEF");
+            strcpy(out, "FUNCTION CALL");
             break;
         case IDXING  :
-            strcpy(out, "IDXING");
+            strcpy(out, "ARRAY INDEXING");
             break;
         case BODYDF:
-            strcpy(out, "BODYDF");
+            strcpy(out, "BODY BEGIN");
             break;
         case EOSCPE:
-            strcpy(out, "EOSCPE");
+            strcpy(out, "END OF SCOPE");
+            break;
+        case PARAMT:
+            sprintf(out, "PARAM [%s]", n->vall->vall.str);
+            break;
+        case PPARAM:
+            sprintf(out, "POINTER PARAM [%s]", n->vall->vall.str);
             break;
         case CODEIS:
-            strcpy(out, "CODEIS");
+            strcpy(out, "INIT CODE");
             break;
         case CDHALT:
-            strcpy(out, "CDHALT");
+            strcpy(out, "HALT");
             break;
         default:
             sprintf(out, "UNKNOWN [%d/%s]", n->type, get_tokval(n->vall));

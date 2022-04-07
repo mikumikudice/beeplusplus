@@ -4,6 +4,7 @@
 imut char * PRVONHR = "previously opened here";
 imut char * OBS_IFB = "obs: you cannot define an if/elif/else block without curly brackets";
 imut char * IPATH_E = "obs: the compiler was expecting a string: the path to the extern file";
+imut char * PARAMPT = "tip: if you're trying to define a parameter as pointer, use `fn([foo])`";
 
 // error messages
 imut char * REALERR = "an unexpected error occurred";
@@ -26,10 +27,12 @@ imut char * EXPCTEX = "expected expression at this point";
 imut char * EXPCTBD = "expected body definition at this point";
 imut char * EXPVRHD = "expected valid right-hand value";
 imut char * EXPVHND = "expected valid evaluatable value";
+imut char * EXPPPAR = "expected a closing square bracket after parameter as pointer definition";
 imut char * DEFWOEQ = "you cannot assign a variable with shorthand operators while defining it";
 imut char * NOTASGN = "this is not a valid assignment operator";
 imut char * MSMATCH = "mismatch of number of assignators and assignateds in expression";
 imut char * NOTERMN = "no terminator at the end of the expression";
+imut char * NOPTRAR = "no arithmetic is allowed on pointers";
 imut char * NOTFLKW = "this keyword is not callable";
 imut char * INVALID = "invalid namespace name";
 imut char * INVLDIX = "invalid indexing value";
@@ -169,7 +172,7 @@ void free_node(node * n){
             ths = tmp->next;
 
             pout = nodet_to_str(tmp);
-            printf("%s; ", pout);
+            printf("%s ", pout);
             free(pout);
 
             if(tmp == n->end){
