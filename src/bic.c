@@ -15,6 +15,7 @@ imut char * UNCBRCK = "unclosed bracket found here";
 imut char * UNCPARN = "unclosed parentheses found here";
 imut char * ALONEXP = "expression out of context found here";
 imut char * CALLERR = "attempt to call an undefined function";
+imut char * CALLINV = "attempt to call an invalid symbol as function";
 imut char * TOOFEWC = "too few arguments in the statement";
 imut char * TOOMUCH = "too much arguments in the statement";
 imut char * MULTIDF = "attempt to define multiple times the same namespace";

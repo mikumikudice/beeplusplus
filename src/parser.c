@@ -303,9 +303,12 @@ node * exprss_r(tkn * c, bool prnd){
 
     // it's a binary operator
     if(c->last->type == INDEXER
-    or c->last->type == LITERAL){
+    or c->last->type == LITERAL
+    or eq_sym(c->last, SYM_PAR, 1)){
         // append lefthand
         pntr = validthnd(c->last, F, F);
+        if(pntr == nil) cmperr(UNEXPCT, c->last, nil);
+
         path->stt  = pntr;
 
         // append operator
@@ -407,6 +410,10 @@ node * exprss_r(tkn * c, bool prnd){
 
     // continue evaluating expression
     if(path->ltok->next->type == OPERATOR){
+        // avoid duplication
+        pntr = pntr->last;
+        free_node(pntr->next, T);
+
         pntr->next = exprss_r(path->ltok->next, prnd);
         pntr->next->last = pntr;
         pntr = pntr->next;
@@ -761,8 +768,14 @@ node * funcall_r(tkn * c){
     pntr->vall = c;
 
     // assert keyword type
-    if(pntr->type == KEYWORD && !eq_kwd(c, funl))
-        cmperr(NOTFLKW, c, nil);
+    if(pntr->type == KEYWORD){
+        if(!eq_kwd(c, funl))
+            cmperr(NOTFLKW, c, nil);
+
+    // assert function name type
+    } else if(pntr->type != INDEXER){
+        cmperr(CALLINV, c, nil);
+    }
     
     // the body is a single line
     if(eoa != c->next->next){
@@ -774,31 +787,18 @@ node * funcall_r(tkn * c){
         for(tkn * t = c->next->next; t != eoa; t = t->next){
             switch (t->type){
                 case INDEXER:
-                    if(!which){
-                        which = T;
-                        path->dcnt++;
-
-                        // default function arguments or computation on assignment
-                        if(t->next->type == OPERATOR){
-                            node * exp = exprss_r(t->next, F);
-
-                            pntr->next = exp;
-                            pntr->next->last = pntr;
-                            pntr = exp->next;
-
-                            t = exp->ltok;
-
-                        // just the parameter
-                        } else tok_to_node(pntr, t);
-                    } else cmperr(UNEXPCT, t, nil);
-                    break;
-
                 case LITERAL:
                     if(!which){
                         which = T;
                         path->dcnt++;
 
-                        tok_to_node(pntr, t);
+                        // validate argument
+                        pntr->next = validthnd(t, F, F);
+                        if(pntr->next == nil) cmperr(EXPVHND, t, nil);
+                        pntr->next->last = pntr;
+                        pntr = pntr->next;
+
+                        t = pntr->ltok;
                     
                     } else cmperr(UNEXPCT, t, nil); 
                     break;
@@ -1017,6 +1017,13 @@ node *validthnd(tkn * c, bool is_nmsc, bool unwinding){
         path->end = pntr;
         path->ltok = pntr->ltok;
         return path;
+    
+    // it's a left-hand and it's an array (indexing)
+    } else if(eq_sym(c, SYM_SQR, 1)){
+        free(path);
+        free(pntr);
+        tkn *bgn = matchpair(c);
+        return validthnd(bgn->last, T, F);
 
     // structure literal assignment
     } else if(eq_sym(c->next, SYM_BRA, 0)){
@@ -1027,6 +1034,13 @@ node *validthnd(tkn * c, bool is_nmsc, bool unwinding){
         free(path);
         free(pntr);
         return fun_def_r(c->next);
+
+    // function return
+    } else if(eq_sym(c, SYM_PAR, 1)){
+        free(path);
+        free(pntr);
+        tkn *bgn = matchpair(c);
+        return funcall_r(bgn->last);
 
     // accessing field
     } else if(eq_sym(c->next, SYM_DOT, 0)){
