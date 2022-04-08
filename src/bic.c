@@ -143,6 +143,7 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
 
 void free_node(node * n, bool silent){
     char *pout;
+    cnst bool ctrl = F; 
     if(!n->is_parent){
         if(!silent){
             pout = nodet_to_str(n);
@@ -151,6 +152,7 @@ void free_node(node * n, bool silent){
         }
         free(n);
     } else {
+        ctrl = 0;
         node *tmp = nil, *ths = n->stt, *end = n->end;
 
         if(!silent){
@@ -168,7 +170,10 @@ void free_node(node * n, bool silent){
             // it's the end of the branch
             if(tmp == end){
                 free_node(tmp, silent);
-                if(!silent) printf("\n");
+                if(!silent && !ctrl){
+                    printf("\n\n");
+                    ctrl = T;
+                }
                 break;
             } else free_node(tmp, silent);
         }

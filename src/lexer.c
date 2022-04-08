@@ -148,13 +148,12 @@ tkn * lexit(){
         i64  ctc   = 0; // current token's character
         char ctkn[lsz];
 
-        for(u64 c = 0; c < lsz; c++){
+        for(u64 c = 0; c <= lsz; c++){
             // it's a token letter, so just append it
-            if(validn(src[c])){
+            if(validn(src[c]) and src[c] != '\0'){
                 ctkn[ctc++] = src[c];
-            }
             // it's not, so it's a especial character or a space
-            else {
+            } else {
                 tkn this; // the next token
 
                 this.type = UNKNOWN;
@@ -216,14 +215,12 @@ tkn * lexit(){
                     // keep storing
                     else if(issc) ctkn[ctc++] = src[c];
                     continue;
-                }
                 // keep storing
-                else if(isstr){
+                } else if(isstr){
                     ctkn[ctc++] = src[c];
                     continue;
-                }
                 // the read token is a keyword, index or literal
-                else if(ctc > 0){
+                } else if(ctc > 0){
                     // first close the buffer
                     ctkn[ctc] = '\0';
                     // resset the current token
@@ -356,9 +353,10 @@ tkn * lexit(){
                     // current char may be 
                     // a symbol
                     if(src[c] != ' ') c--;
-                }
+
                 // symbol or operator
-                else if(src[c] != ' '){
+                } else if(src[c] != ' '){
+                    if(src[c] == '\0') continue;
                     u16 alen = arrlen(SYMBOLS);
                     // compare with the known symbols
                     for(u16 s = 0; s < alen; s++){
