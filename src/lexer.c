@@ -154,7 +154,7 @@ tkn * lexit(){
                 tkn this; // the next token
 
                 this.type = UNKNOWN;
-                this.coln = ctc > 0 ? c - 1 : c;
+                this.coln = ctc > 0 ? c - ctc : c;
                 this.line = l;
                 this.apdx = 0;
 
