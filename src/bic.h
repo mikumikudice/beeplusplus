@@ -58,22 +58,25 @@ imut char OPERATORS[][4] = {
     // arithmetic operators
     "*"  , "/" , "%" , "+"  , "-"  ,
     // bitwise operators
-    "~"  , "|" , "&" , "^"  , ">>" , "<<" ,
-
-    // boolean operators
-    "and", "or", "not",
+    "~"  , "&" , "|" ,  "^" , ">>" , "<<" ,
 
     // miscellaneous
     ":"  ,        // label operator
     ".."          // range operator
 };
 
-u16 asgn[2] = {0 , 11}; // assignment operators
+imut char TXT_OPERS[][4] = {
+    // boolean operators
+    "and", "or", "not",
+};
+
+u16 asgn[2] = {00, 11}; // assignment operators
 u16 eqlt[2] = {12, 17}; // equality operators
 u16 arth[2] = {18, 22}; // arithmetic operators
-u16 unry[2] = {22, 23}; // unary operators
+u16 unry[2] = {22, 24}; // unary operators
 u16 btws[2] = {23, 28}; // bitwise operators
-u16 blan[2] = {29, 31}; // boolean operators
+
+u16 blns[2] = {00,  3}; // boolean operators
 
 typedef struct string_array {
     char **arr;

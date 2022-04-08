@@ -290,7 +290,7 @@ node * constd_r(tkn * c){
 // arithmetic and boolean expressions hotpath's rule
 node * exprss_r(tkn * c, bool prnd){
     // redirect if it's an assignment
-    if(eq_opr_range(c, asgn))
+    if(eq_opr_range(c, asgn) and c->apdx == 0)
         return assign_r(c, prnd);
     else if(c->type != OPERATOR)
         cmperr(EXPCTEX, c->last, nil);
@@ -310,8 +310,6 @@ node * exprss_r(tkn * c, bool prnd){
 
         // append operator
         tok_to_node(pntr, c);
-
-        // TODO: handle array indexing
 
         // both sides are valid members
         if(c->next->type == INDEXER
@@ -350,33 +348,46 @@ node * exprss_r(tkn * c, bool prnd){
                     path->ltok = pntr->ltok;
 
                 // just a value surrounded by parentheses
-                } else if(rhnd->type == INDEXER or rhnd->type == LITERAL) {
+                } else if(rhnd->type == INDEXER or rhnd->type == LITERAL){
                     tok_to_node(pntr, rhnd);
                     path->ltok = rhnd;
                 }
+            // function-like keywords
+            } else if(eq_kwd(c->next, funl)){
+                pntr->next = funcall_r(c->next);
+                pntr->next->last = pntr;
+                pntr = pntr->next;
+
+                path->ltok = pntr->ltok;
             // errors
             } else {
-                // it's an assignment operator
-                if(eq_opr_range(c, asgn))
-                    cmperr("invalid value for assignment", c->next, nil);
-                // something else
-                else if(eq_opr_range(c, eqlt))
-                    cmperr("righthand cannot be evaluated", c->next, nil);
+                if(c->apdx == 0){
+                    // it's an assignment operator
+                    if(eq_opr_range(c, asgn))
+                        cmperr("invalid value for assignment", c->next, nil);
+                    // something else
+                    else if(eq_opr_range(c, eqlt))
+                        cmperr("righthand cannot be evaluated", c->next, nil);
+                    else cmperr(UNEXPCT, c->next, nil);
+                } else cmperr(UNEXPCT, c->next, nil);
             }
         }
     // unary
     } else if(eq_opr_range(c, unry)){
-        // append the operator
-        tkn * after = c->next->next;
 
+        // append the operator
         pntr = alloc(sizeof(node));
         pntr->type = OPERATOR;
         pntr->vall = c;
+
+        cmperr("HERE!", c->next, nil);
 
         pntr->next = validthnd(c->next, F, F);
         pntr->next->last = pntr;
         pntr = pntr->next;
         if(pntr == nil) cmperr(EXPVHND, c->next, nil);
+
+        tkn * after = c->next->next;
 
         // move to the end of the current path
         if(pntr->ltok) after = pntr->ltok;
@@ -393,6 +404,16 @@ node * exprss_r(tkn * c, bool prnd){
     } else cmperr(
         "lefthand of the expression"
         " is missing or invalid", c->next, nil);
+
+    // continue evaluating expression
+    if(path->ltok->next->type == OPERATOR){
+        pntr->next = exprss_r(path->ltok->next, prnd);
+        pntr->next->last = pntr;
+        pntr = pntr->next;
+
+        path->end  = pntr;
+        path->ltok = pntr->ltok;
+    }
 
     // last syntax check
     if(prnd){
@@ -1072,6 +1093,7 @@ node *validthnd(tkn * c, bool is_nmsc, bool unwinding){
         }
     // the caller must handle the error
     }
+
     return nil;
 }
 
@@ -1144,7 +1166,10 @@ char * nodet_to_str(node * n){
                 sprintf(out, "SYMBOL [%s]", SYMBOLS[n->vall->vall.num].e);
             break;
         case OPERATOR:
-            sprintf(out, "OPERATOR [%s]", OPERATORS[n->vall->vall.num]);
+            if(n->vall->apdx == 0)
+                sprintf(out, "OPERATOR [%s]", OPERATORS[n->vall->vall.num]);
+            else
+                sprintf(out, "OPERATOR [%s]", TXT_OPERS[n->vall->vall.num]);
             break;
         case CONSTD  :
             strcpy(out, "CONST. DEF.");

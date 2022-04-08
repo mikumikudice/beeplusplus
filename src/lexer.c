@@ -73,13 +73,17 @@ char * get_tokval(tkn * tok){
         case INDEXER:
             return tok->vall.str;
         case LITERAL:            
-            return "LITERAL";
+            if(tok->apdx == STRING) return tok->vall.str;
+            else return "LITERAL";
         case LSYMBOL:
             if(tok->vall.num >= arrlen(SYMBOLS)) return "OOB";
             if(tok->apdx == 0) return SYMBOLS[tok->vall.num].s;
             else return SYMBOLS[tok->vall.num].e;
         case OPERATOR:
-            return OPERATORS[tok->vall.num];
+            if(tok->apdx == 0)
+                return OPERATORS[tok->vall.num];
+            else
+                return TXT_OPERS[tok->vall.num];
         default:
             return "NONE";
     }
@@ -325,14 +329,27 @@ tkn * lexit(){
                             if(isn){
                                 this.type = LITERAL;
                                 sscanf(ctkn, "%d", &this.vall.num);
-                            // indexer
-                            } else if(!isnumc(ctkn[0])){
-                                this.type = INDEXER;
-                                this.vall.str = alloc(strlen(ctkn) + 1);
-                                strcpy(this.vall.str, ctkn);
-
-                            // invalid indexer name
-                            } else cmperr(INVALID, &this, nil);
+                            // word operator or literal
+                            } else {
+                                // textual operator
+                                u64 max  = arrlen(TXT_OPERS);
+                                u16 llen = 0;
+                                for(u16 o = 0; o < max; o++){
+                                    u16 len = strlen(TXT_OPERS[o]);
+                                    if(!strcmp(TXT_OPERS[o], ctkn) and len >= llen){
+                                        this.type = OPERATOR;
+                                        this.vall.num = o;
+                                        this.apdx = 1;
+                                        llen = len;
+                                    }
+                                }
+                                // indexer
+                                if(this.type == UNKNOWN){
+                                    this.type = INDEXER;
+                                    this.vall.str = alloc(strlen(ctkn) + 1);
+                                    strcpy(this.vall.str, ctkn);
+                                }
+                            }
                         }
                     }
                     // decrement it if the
@@ -408,7 +425,7 @@ tkn * lexit(){
                         // may occur some mismatches like
                         // =< being read as =, so keep it
                         // going until the end
-                        if(!strcmp(OPERATORS[o], t) and len > mlen){
+                        if(!strcmp(OPERATORS[o], t) and len >= mlen){
                             this.vall.num = o;
                             this.type = OPERATOR;
                             mlen = len;
