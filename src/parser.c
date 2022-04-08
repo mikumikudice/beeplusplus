@@ -91,7 +91,7 @@ node * assign_r(tkn * c, bool prnd){
     // Type A: <type> foo = bar [, spm = egg]*
 
     // validate the left-hand
-    node *pntr = validthnd(strt, T);
+    node *pntr = validthnd(strt, T, F);
     path->stt = pntr;
 
     if(pntr == nil) cmperr(INVALID, strt, nil);
@@ -114,7 +114,7 @@ node * assign_r(tkn * c, bool prnd){
         // another sentence
         } else {
             // push righthand
-            pntr->next = validthnd(c->next, F);
+            pntr->next = validthnd(c->next, F, F);
             pntr->next->last = pntr;
             pntr = pntr->next;
 
@@ -149,7 +149,7 @@ node * assign_r(tkn * c, bool prnd){
             or prox->type == INDEXER
             or prox->type == KEYWORD){
 
-            pntr->next = validthnd(prox, F);
+            pntr->next = validthnd(prox, F, F);
             pntr->next->last = pntr;
             pntr = pntr->next;
 
@@ -305,7 +305,7 @@ node * exprss_r(tkn * c, bool prnd){
     if(c->last->type == INDEXER
     or c->last->type == LITERAL){
         // append lefthand
-        pntr = validthnd(c->last, F);
+        pntr = validthnd(c->last, F, F);
         path->stt  = pntr;
 
         // append operator
@@ -373,7 +373,7 @@ node * exprss_r(tkn * c, bool prnd){
         pntr->type = OPERATOR;
         pntr->vall = c;
 
-        pntr->next = validthnd(c->next, F);
+        pntr->next = validthnd(c->next, F, F);
         pntr->next->last = pntr;
         pntr = pntr->next;
         if(pntr == nil) cmperr(EXPVHND, c->next, nil);
@@ -460,30 +460,41 @@ node * sttmnt_r(tkn * c){
         if((inpar = eq_sym(innr, SYM_PAR, 0))) innr = innr->next;
 
     run_again:
-        // main expression of the statement (keyword [exp] {};)
-        if(innr->type == INDEXER
-        or innr->type == LITERAL
-        or innr->type == OPERATOR){
-            // evaluate statement expression
-            node * expr = exprss_r(innr, inpar);
-            pntr->next = expr;
+        // push pointer to the operator
+        if(innr->type == INDEXER or innr->type == LITERAL){
+
+            pntr->next = validthnd(innr, F, F);
+            if(pntr->next == nil) cmperr(EXPVHND, innr, nil);
+            
             pntr->next->last = pntr;
             pntr = pntr->next;
 
-            tkn * body_s = expr->ltok;
+            innr = pntr->ltok->next;
+        }
+
+        // main expression of the statement (keyword [exp] {};)
+        if(innr->type == OPERATOR){
+            // avoid doing the same thing twice
+            pntr = pntr->last;
+            free_node(pntr->next, T);
+
+            // evaluate statement expression
+            pntr->next = exprss_r(innr, inpar);
+            pntr->next->last = pntr;
+            pntr = pntr->next;
+
+            tkn * body_s = pntr->ltok->next;
             if(eq_sym(body_s, SYM_PAR, 1)) body_s = body_s->next;
 
             // TODO: handle for loop mode 2
 
             // it must be the end of the statement head
             if(eq_sym(body_s, SYM_BRA, 0)){
-                node * body = parse(body_s->next, SCOPE);
+                pntr->next = parse(body_s->next, SCOPE);
 
-                pntr->next = body->stt;
                 pntr->next->last = pntr;
                 pntr = pntr->next;
-
-                path->ltok = body->ltok;
+                path->ltok = pntr->ltok;
 
             } else cmperr(EXPCTBD, body_s,
                 &(tkn){.vall.str = OBS_IFB, .apdx = 1});
@@ -535,7 +546,7 @@ node * sttmnt_r(tkn * c){
 
         // it's a label or a value to return
         if(exp->type == INDEXER){
-            pntr->next = validthnd(exp, F);
+            pntr->next = validthnd(exp, F, F);
             pntr->next->last = pntr;
             pntr = pntr->next;
 
@@ -545,7 +556,7 @@ node * sttmnt_r(tkn * c){
         } else {
             if(c->vall.num == KW_RETURN){
                 if(exp->type == LITERAL or exp->type == KEYWORD){
-                    pntr->next = validthnd(exp, F);
+                    pntr->next = validthnd(exp, F, F);
                     pntr->next->last = pntr;
                     pntr = pntr->next;
 
@@ -939,7 +950,7 @@ node * extrn_exp(tkn *c){
 }
 
 // validates path as a righthand or lefthand if ``is_nmsc`` is defined
-node * validthnd(tkn * c, bool is_nmsc){
+node *validthnd(tkn * c, bool is_nmsc, bool unwinding){
     node * path = alloc(sizeof(node));
     node * pntr = alloc(sizeof(node));
 
@@ -996,9 +1007,53 @@ node * validthnd(tkn * c, bool is_nmsc){
         free(pntr);
         return fun_def_r(c->next);
 
+    // accessing field
+    } else if(eq_sym(c->next, SYM_DOT, 0)){
+        
+        path->stt  = pntr;
+        path->type = ACCESS;
+        path->is_parent = T;
+
+        // fields must be indexers
+        if(c->next->next->type == INDEXER){
+            // push dot to later information
+            tok_to_node(pntr, c->next);
+
+            pntr->next = validthnd(c->next->next, T, T);
+
+            if(pntr->next == nil)
+                cmperr(INVLDAC, c->next->next, nil);
+            // push forward
+            else {
+                pntr->next->last = pntr;
+                pntr = pntr->next;
+
+                path->ltok = pntr->ltok;
+                path->end  = pntr;
+
+                return path;
+            }
+        // syntax error
+        } else cmperr(UNEXPCT, c->next->next, nil);
+
     } else if(c->type == INDEXER){
         free(path);
-        return pntr;
+        // the indexer is a field
+        if(eq_sym(c->last, SYM_DOT, 0) and !unwinding){
+            tkn *root = c->last->last;
+
+            // go back til the first field
+            while(eq_sym(root->last, SYM_DOT, 0)){
+                root = root->last->last;
+                if(root->type != INDEXER) cmperr(UNEXPCT, root, nil);
+            }
+            
+            free(pntr);
+            return validthnd(root, T, T);
+        // just a single indexer
+        } else {
+            return pntr;
+        }
 
     // single normal value
     } else if(!is_nmsc){
@@ -1082,6 +1137,12 @@ char * nodet_to_str(node * n){
             else
                 sprintf(out, "LITERAL [%lx]", n->vall->vall.num);
             break;
+        case LSYMBOL :
+            if(n->vall->apdx == 0)
+                sprintf(out, "SYMBOL [%s]", SYMBOLS[n->vall->vall.num].s);
+            else
+                sprintf(out, "SYMBOL [%s]", SYMBOLS[n->vall->vall.num].e);
+            break;
         case OPERATOR:
             sprintf(out, "OPERATOR [%s]", OPERATORS[n->vall->vall.num]);
             break;
@@ -1126,22 +1187,25 @@ char * nodet_to_str(node * n){
         case IDXING  :
             strcpy(out, "ARRAY INDEXING");
             break;
-        case BODYDF:
+        case ACCESS  :
+            strcpy(out, "FIELD ACCESS");
+            break;
+        case BODYDF  :
             strcpy(out, "BODY BEGIN");
             break;
-        case EOSCPE:
+        case EOSCPE  :
             strcpy(out, "END OF SCOPE");
             break;
-        case PARAMT:
+        case PARAMT  :
             sprintf(out, "PARAM [%s]", n->vall->vall.str);
             break;
-        case PPARAM:
+        case PPARAM  :
             sprintf(out, "POINTER PARAM [%s]", n->vall->vall.str);
             break;
-        case CODEIS:
+        case CODEIS  :
             strcpy(out, "INIT CODE");
             break;
-        case CDHALT:
+        case CDHALT  :
             strcpy(out, "HALT");
             break;
         default:

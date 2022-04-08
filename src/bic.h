@@ -196,7 +196,7 @@ typedef enum formal_lang_rule {
     LABELD,  JMPSTT ,         // goto statements
     FUNDEF,  FNCALL ,         // functions
     PARAMT,  PPARAM ,         // types of function parameters
-    IDXING,                   // arrays
+    IDXING,  ACCESS ,         // arrays and structures field access
     BODYDF,  EOSCPE ,         // code scope definition
     CODEIS,  CDHALT ,         // representative value (code itself)
     COLLEC,  MIDREP ,         // collection of nodes
@@ -276,7 +276,7 @@ node *funcall_r(tkn *c);
 node *labeldf_r(tkn *c, bool is_swedish);
 node *jmp_stt_r(tkn *c);
 node *extrn_exp(tkn *c);
-node *validthnd(tkn *c, bool is_nmsc);
+node *validthnd(tkn * c, bool is_nmsc, bool unwinding);
 
 // parser
 node * parse(tkn * tkns, cmod mode);
@@ -299,7 +299,8 @@ void free_str();
 
 char * nodet_to_str(node * n);
 
-void free_node(node * n);
+// free the given node and all child nodes if `n->is_parent` is true
+void free_node(node *n, bool silent);
 
 // compilation error
 void cmperr(imut char * err, tkn * arw, tkn * cmpl);

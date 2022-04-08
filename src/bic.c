@@ -36,6 +36,7 @@ imut char * NOPTRAR = "no arithmetic is allowed on pointers";
 imut char * NOTFLKW = "this keyword is not callable";
 imut char * INVALID = "invalid namespace name";
 imut char * INVLDIX = "invalid indexing value";
+imut char * INVLDAC = "invalid field access on this namespace";
 
 // string array of each line of code
 stra code;
@@ -112,28 +113,8 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     // TODO: NASM gen
 
     skip_cmp:
-
-    char *pout;
-    node *temp, *this = bast->stt;
-    // free AST
-    while(T){
-        temp = this;
-        this = temp->next;
-
-        pout = nodet_to_str(temp);
-        printf("%s", pout);
-        free(pout);
-
-        if(temp == bast->end){
-            free_node(temp);
-            break;    
-        } else {
-            free_node(temp);
-            printf("\n");
-        }
-    }
-    free(bast);
     printf("\n");
+    free_node(bast, F);
 
     tkn * tok, * old = nil;
     i64   cnt = EOTT->apdx;
@@ -159,29 +140,37 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     return out;
 }
 
-void free_node(node * n){
-    char * pout;
-    if(!n->is_parent) free(n);
-    else {
-        printf("\n");
-        node * tmp = nil, *ths = n->stt;
+void free_node(node * n, bool silent){
+    char *pout;
+    if(!n->is_parent){
+        if(!silent){
+            pout = nodet_to_str(n);
+            printf("%s ", pout);
+            free(pout);
+        }
+        free(n);
+    } else {
+        node *tmp = nil, *ths = n->stt, *end = n->end;
+
+        if(!silent){
+            pout = nodet_to_str(n);
+            printf("%s\n", pout);
+            free(pout);
+        }
+        free(n);
         while(T){
             assert(ths != nil, nodet_to_str(n));
 
             tmp = ths;
             ths = tmp->next;
 
-            pout = nodet_to_str(tmp);
-            printf("%s ", pout);
-            free(pout);
-
-            if(tmp == n->end){
-                free_node(tmp);
-                printf("\n");
+            // it's the end of the branch
+            if(tmp == end){
+                free_node(tmp, silent);
+                if(!silent) printf("\n");
                 break;
-            } else free_node(tmp);
+            } else free_node(tmp, silent);
         }
-        free(n);
     }
 }
 
@@ -244,7 +233,7 @@ void cmperr(imut char * err, tkn * arw, tkn * cmpl){
 
             fprintf(stderr, "^\n");
             fprintf(stderr, DEF);
-        }
+        } else fprintf(stderr, "\n");
     }
     fprintf(stderr, "\nthe compilation failed.\nplease press any key to exit...");
     scanf("nothing");
