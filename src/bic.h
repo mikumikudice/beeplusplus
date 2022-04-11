@@ -73,7 +73,7 @@ imut char TXT_OPERS[][4] = {
 u16 asgn[2] = {00, 11}; // assignment operators
 u16 eqlt[2] = {12, 17}; // equality operators
 u16 arth[2] = {18, 22}; // arithmetic operators
-u16 unry[2] = {22, 24}; // unary operators
+u16 unry[2] = {21, 24}; // unary operators
 u16 btws[2] = {23, 28}; // bitwise operators
 
 u16 blns[2] = {00,  3}; // boolean operators
@@ -104,7 +104,7 @@ typedef struct pattern {
 imut ptrn SYMBOLS[] = {
     (ptrn){.s = "(" , .e = ")" }, // call/exp
     (ptrn){.s = "{" , .e = "}" }, // scope
-    (ptrn){.s = "[" , .e = "]" }, // indexing
+    (ptrn){.s = "[" , .e = "]" }, // array [and] indexing
     (ptrn){.s = "." , .e = nil }, // dot
     (ptrn){.s = "," , .e = nil }, // comma
     (ptrn){.s = ";" , .e = nil }, // semicolon
@@ -139,7 +139,6 @@ imut hash metachar[] = {
     (hash){.key = "*t" , .val = "\t"},
     (hash){.key = "*r" , .val = "\r"},
     (hash){.key = "*b" , .val = "\b"},
-    (hash){.key = "*e" , .val = "\0"},
     (hash){.key = "**" , .val =  "*"},
 };
 
