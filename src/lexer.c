@@ -24,7 +24,7 @@ bool validn(char chr){
 }
 
 // checks if the given string matches all chars according to the given func
-bool matchs(char * str, bool(*func)(char)){
+bool matchs(char *str, bool(*func)(char)){
     bool valid = T;
     for(u64 c = 0; c < strlen(str); c++){
         if(valid) valid = func(str[c]);
@@ -34,7 +34,7 @@ bool matchs(char * str, bool(*func)(char)){
 }
 
 // checks if the char in str is scaped (seeks for backslashes)
-bool isscpd(char * str, u64 chr){
+bool isscpd(char *str, u64 chr){
     if(chr < 0) return F;
 
     if(str[chr - 1] == '*'
@@ -43,7 +43,7 @@ bool isscpd(char * str, u64 chr){
 }
 
 // returns the index of the keyword if str is one, otherwise returns -1
-i16 iskeyw(char * str){
+i16 iskeyw(char *str){
     u16 len = arrlen(KEYWORDS);
     for(u16 kw = 0; kw < len; kw++){
         if(!strcmp(str, KEYWORDS[kw])) return kw;
@@ -56,9 +56,13 @@ u64 upow(u64 b, u64 p){
     // using rookieslab method
     u64 out = 1;
     while(p > 0){
+        // if the value is odd
+        // multiply normally
         if(p & 1){
             out = (out * b);
         }
+        // then when it's even
+        // simply bitwise-shift it
         b = (b * b);
         p >>= 2;
     }
@@ -66,7 +70,7 @@ u64 upow(u64 b, u64 p){
 }
 
 // returns the token value as a string
-char * get_tokval(tkn * tok){
+char *get_tokval(tkn *tok){
     switch(tok->type){
         case KEYWORD:
             return KEYWORDS[tok->vall.num];
@@ -90,13 +94,14 @@ char * get_tokval(tkn * tok){
 }
 
 // converts the string path to a hexadecimal value
-u32 strtohex(char * data){
-    u32 out = 0x00000000;
+u32 strtohex(char *data){
+    u32 out = 0;
     u16 len = strlen(data);
-    assert(len <= 4, nil);
+    assert(len <= 4, nil); // confirm it's 4 chars wide
 
     for(u16 d = 4; d > 0; d--){
         if(d <= len){
+            // add each char as a number by oring it every 8 bits
             out |= data[len - d] << d * 8;
         }
     }
@@ -107,7 +112,7 @@ u32 strtohex(char * data){
 // for each string literal, store each occurrence in a table and
 // return the index of it. It also helps with the code gen step,
 // by placing the values in the .rodata segment of the nasm file
-u64 strtoptr(char * str){
+u64 strtoptr(char *str){
     // init array if its nil
     if(!sarr.arr) sarr.arr = alloc(sizeof(char *));
     for(u64 s = 0; s < sarr.len; s++){
@@ -126,9 +131,9 @@ void free_str(){
     }
 }
 
-tkn * lexit(){
+tkn *lexit(){
     // primitive ast output
-    tkn * out;
+    tkn  *out;
     tkn **lst = &EOTT; // the address of the last token pointer
 
     // set up the chain loop
@@ -141,7 +146,7 @@ tkn * lexit(){
         // skip comment lines
         if(lsz == 0) continue;
 
-        char * src = alloc(lsz + 1);
+        char  *src = alloc(lsz + 1);
         strcpy(src, code.arr[l]);
 
         bool isstr = F; // is the current sentence a string?
@@ -175,7 +180,7 @@ tkn * lexit(){
                     if(!isstr){
                         this.type = LITERAL;
 
-                        char * dummy = alloc(strlen(ctkn) + 1);
+                        char *dummy = alloc(strlen(ctkn) + 1);
                         strcpy(dummy, ctkn);
 
                         u64 len = arrlen(metachar);
@@ -188,7 +193,7 @@ tkn * lexit(){
                         if(src[c] == metachar[0].val[0]){
                             // slice it
                             if(strlen(dummy) > 4){
-                                char * temp = dummy;
+                                char *temp = dummy;
                                 dummy = str_sub(dummy, 0, 4);
                                 free(temp);
                             }
@@ -441,7 +446,7 @@ tkn * lexit(){
                 // store the previous token on the current
                 this.last = *lst;
 
-                tkn ** next;
+                tkn **next;
                 if(EOTT->apdx == 0) next = &out;
                 else next = &(*lst)->next;
 

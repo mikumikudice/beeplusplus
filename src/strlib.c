@@ -5,7 +5,7 @@ u64 strarrlen(char ** arr, u64 len){
     return out;
 }
 
-i64 strfnd(char * str, const char * pat){
+i64 strfnd(char *str, const char *pat){
     // avoid a lot of calls
     u64 size = strlen(str);
     u64 ptsz = strlen(pat);
@@ -13,7 +13,7 @@ i64 strfnd(char * str, const char * pat){
     if(size == ptsz)
     if(!strcmp(str, pat)) return 0;
 
-    // offseted string
+    // offsetted string
     char sub[ptsz + 1];
     // loop until the end
     for(i64 o = 0; o + ptsz <= size; o++){
@@ -29,7 +29,7 @@ i64 strfnd(char * str, const char * pat){
 }
 
 // find last occurrence
-i64 strfndl(char * str, const char * pat){
+i64 strfndl(char *str, const char *pat){
     // avoid a lot of calls
     u64 size = strlen(str);
     u64 ptsz = strlen(pat);
@@ -39,7 +39,7 @@ i64 strfndl(char * str, const char * pat){
     if(size == ptsz)
     if(!strcmp(str, pat)) return 0;
 
-    // offseted string
+    // offsetted string
     char sub[ptsz + 1];
     // loop until the end
     for(i64 o = 0; o + ptsz <= size; o++){
@@ -54,8 +54,8 @@ i64 strfndl(char * str, const char * pat){
     return pos;
 }
 
-// offseted search
-i64 strafnd(char * str, const char * pat, i64 off){
+// offsetted search
+i64 strafnd(char *str, const char *pat, i64 off){
     // avoid a lot of calls
     u64 size = strlen(str);
     u64 ptsz = strlen(pat);
@@ -89,7 +89,7 @@ i64 strafnd(char * str, const char * pat, i64 off){
 }
 
 // count of matching cases
-u64 strfndc(char * str, const char * pat){
+u64 strfndc(char *str, const char *pat){
     // avoid a lot of calls
     u64 size = strlen(str);
     u64 ptsz = strlen(pat);
@@ -98,7 +98,7 @@ u64 strfndc(char * str, const char * pat){
     if(!strcmp(str, pat)) return 1;
     else return 0;
 
-    // offseted string
+    // offsetted string
     i64 cnnt = 0;
     char sub[ptsz + 1];
     // loop until the end
@@ -114,7 +114,7 @@ u64 strfndc(char * str, const char * pat){
     return cnnt;
 }
 
-i64 str_arrfnd(char ** arr, const char * val, u64 len){
+i64 str_arrfnd(char **arr, const char *val, u64 len){
     for(u16 i = 0; i < strarrlen(arr, len) / sizeof(arr); i++){
         // check every item in array
         if(!strcmp(arr[i], val)) return i;
@@ -123,7 +123,7 @@ i64 str_arrfnd(char ** arr, const char * val, u64 len){
 }
 
 // stack-allocated arrlen find
-i64 stk_strarrfnd(char ** arr, char * val){
+i64 stk_strarrfnd(char **arr, char *val){
 
     for(u64 i = 0; i < sizeof(arr); i++){
         // check every item in array
@@ -133,7 +133,7 @@ i64 stk_strarrfnd(char ** arr, char * val){
 }
 
 // remember that str is freed after calling
-char * str_sub(char * str, i64 i, i64 f){
+charstr_sub(char *str, i64 i, i64 f){
     // sugar indexes
     u64 len = strlen(str);
     if(i < 0) i = len + i + 1;
@@ -156,12 +156,12 @@ char * str_sub(char * str, i64 i, i64 f){
     }
     // char slice
     if(i == f){
-        char * out = alloc(2);
+        char *out = alloc(2);
         sprintf(out, "%c", str[i]);
         return out;
     }
 
-    char * out = alloc(f - i + 1);
+    char *out = alloc(f - i + 1);
     for(u64 c = i; c <= f; c++){out[c - i] = str[c];}
 
     out[f - i] = '\0';
@@ -169,7 +169,7 @@ char * str_sub(char * str, i64 i, i64 f){
 }
 
 // remember that str is freed after calling
-char * strgsub(char * str, const char * pat, char * sup){
+char *strgsub(char *str, const char *pat, char *sup){
     // safety check
     if(strfnd(str, pat) == -1) return str;
     if(!strcmp(str, pat)){
@@ -178,14 +178,14 @@ char * strgsub(char * str, const char * pat, char * sup){
     }
     if(!strcmp(pat, sup)) return str;
 
-    char * out =
+    char *out =
     alloc(strlen(str) + max(strlen(sup), 1) * strfndc(str, pat) + 1);
     strcpy(out, str);
 
     u64 frst = strfnd(out, pat);
     while(frst != -1){
         u64 last;
-        char * left, *rght;
+        char *left, *rght;
         // split the string in what comes before
         // the pattern and what comes after it
         last = frst + strlen(pat);
@@ -207,7 +207,7 @@ char * strgsub(char * str, const char * pat, char * sup){
     return out;
 }
 
-char * strtrim(char * str){
+char *strtrim(char *str){
     u64 len = strlen(str);
 
     bool started = F;
@@ -220,14 +220,14 @@ char * strtrim(char * str){
     }
     if(!(stt or end)) return str;
 
-    char * out = str_sub(str, stt, end + 1);
+    char *out = str_sub(str, stt, end + 1);
     free(str);
 
     return out;
 }
 
-char * strpush(char * str, char * otr){
-    char * out = alloc(strlen(str) + strlen(otr) + 1);
+char *strpush(char *str, char *otr){
+    char *out = alloc(strlen(str) + strlen(otr) + 1);
     strcpy(out, str);
     free(str);
 

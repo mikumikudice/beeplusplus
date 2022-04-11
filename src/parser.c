@@ -27,7 +27,7 @@
 
 // code path rules
 
-node * define_r(tkn * c){
+node *define_r(tkn *c){
     node *path = alloc(sizeof(node));
     node *pntr = alloc(sizeof(node));
 
@@ -76,7 +76,7 @@ node * define_r(tkn * c){
 }
 
 // assignment hotpath's rule
-node * assign_r(tkn * c, bool prnd){
+node *assign_r(tkn *c, bool prnd){
     // validate operator
     if(!eq_opr_range(c, asgn))
         cmperr(NOTASGN, c, nil);
@@ -195,25 +195,25 @@ node * assign_r(tkn * c, bool prnd){
     return path;
 }
 // structure definition hotpath's rule
-node * strdef_r(tkn * c){
-    node * path = nil;
+node *strdef_r(tkn *c){
+    node *path = nil;
     assert(F, "structures not implemented yet");
     return path;
 }
 // enum definition hotpath's rule
-node * enumdf_r(tkn * c){
-    node * path = nil;
+node *enumdf_r(tkn *c){
+    node *path = nil;
     assert(F, "enums not implemented yet");
     return path;
 }
 // structure literal hotpath's rule
-node * struct_r(tkn * c){
-    node * path = nil;
+node *struct_r(tkn *c){
+    node *path = nil;
     assert(F, "structures not implemented yet");
     return path;
 }
 // constant definition hotpath's rule
-node * constd_r(tkn * c){
+node *constd_r(tkn *c){
     node *path = alloc(sizeof(node));
     node *pntr = alloc(sizeof(node));
 
@@ -227,7 +227,7 @@ node * constd_r(tkn * c){
 
     // the sentense is fallowing the path `NAMESPACE ( ... );`
     if(eq_sym(c->next, SYM_PAR, 0)){
-        tkn * end = matchpair(c->next);
+        tkn *end = matchpair(c->next);
 
         // it's a function
         if(eq_sym(end->next, SYM_BRA, 0)
@@ -288,15 +288,15 @@ node * constd_r(tkn * c){
     return nil;
 }
 // arithmetic and boolean expressions hotpath's rule
-node * exprss_r(tkn * c, bool prnd){
+node *exprss_r(tkn *c, bool prnd){
     // redirect if it's an assignment
     if(eq_opr_range(c, asgn) and c->apdx == 0)
         return assign_r(c, prnd);
     else if(c->type != OPERATOR)
         cmperr(EXPCTEX, c->last, nil);
 
-    node * path = alloc(sizeof(node));
-    node * pntr;
+    node *path = alloc(sizeof(node));
+    node *pntr;
 
     path->is_parent = T;
     path->type = EXPRSS;
@@ -333,8 +333,8 @@ node * exprss_r(tkn * c, bool prnd){
         } else {
             // the current path fallows the `foo <opr> (bar[ ...])` syntax
             if(eq_sym(c->next, SYM_PAR, 0)){
-                // * c->next->next => <opr> >> ( >> <lhd>
-                tkn * rhnd = c->next->next;
+                // c->next->next => <opr> >> ( >> <lhd>
+                tkn *rhnd = c->next->next;
 
                 // righthand is a `(<opr> foo)` path
                 if(rhnd->type == OPERATOR){
@@ -390,14 +390,14 @@ node * exprss_r(tkn * c, bool prnd){
         pntr = pntr->next;
         if(pntr == nil) cmperr(EXPVHND, c->next, nil);
 
-        tkn * after = c->next->next;
+        tkn *after = c->next->next;
 
         // move to the end of the current path
         if(pntr->ltok) after = pntr->ltok;
 
         // it's an expression
         if(after->next->type == OPERATOR){
-            node * temp = pntr->last;
+            node *temp = pntr->last;
             free(pntr);
 
             temp->next = exprss_r(after->next, F);
@@ -439,15 +439,15 @@ node * exprss_r(tkn * c, bool prnd){
     return path;
 }
 // array definition hotpath rule
-node * arrdef_r(tkn * c){
-    node * path = nil;
+node *arrdef_r(tkn *c){
+    node *path = nil;
     assert(F, "arrays not implemented yet");
     return path;
 }
 // statement declaration hotpath rule
-node * sttmnt_r(tkn * c){
-    node * path = alloc(sizeof(node));
-    node * pntr = alloc(sizeof(node));
+node *sttmnt_r(tkn *c){
+    node *path = alloc(sizeof(node));
+    node *pntr = alloc(sizeof(node));
 
     // basic metadata
     path->is_parent = T;
@@ -483,7 +483,7 @@ node * sttmnt_r(tkn * c){
     // true statements
     if(eq_kwd(c, trus)){
         bool jmpd = F, inpar = F;
-        tkn * innr = c->next;
+        tkn *innr = c->next;
         // just jump over parentheses for now
         if((inpar = eq_sym(innr, SYM_PAR, 0))) innr = innr->next;
 
@@ -511,7 +511,7 @@ node * sttmnt_r(tkn * c){
             pntr->next->last = pntr;
             pntr = pntr->next;
 
-            tkn * body_s = pntr->ltok->next;
+            tkn *body_s = pntr->ltok->next;
             if(eq_sym(body_s, SYM_PAR, 1)) body_s = body_s->next;
 
             // TODO: handle for loop mode 2
@@ -531,7 +531,7 @@ node * sttmnt_r(tkn * c){
         } else if(eq_kwd(innr, ldef)){
             // only a single definition block is allowed
             if(!jmpd){
-                node * defn = define_r(innr);
+                node *defn = define_r(innr);
 
                 pntr->next = defn->stt;
                 pntr->next->last = pntr;
@@ -614,8 +614,8 @@ node * sttmnt_r(tkn * c){
     } else if(eq_kwd(c, funl)){
         if(!eq_sym(c->next, SYM_PAR, 0)) cmperr(UNEXPCT, c->next, nil);
         else {
-            node * eval = funcall_r(c);
-            pntr->next  = eval->stt->next;
+            node *eval = funcall_r(c);
+            pntr->next = eval->stt->next;
             pntr->next->last = pntr;
 
             pntr = eval->end;
@@ -635,7 +635,7 @@ node * sttmnt_r(tkn * c){
 }
 // function definition hotpath rule
 // the given token must be the opening parentheses of the args block 
-node * fun_def_r(tkn * c){
+node *fun_def_r(tkn *c){
     node *path = alloc(sizeof(node));
     node *pntr = alloc(sizeof(node));
 
@@ -645,7 +645,7 @@ node * fun_def_r(tkn * c){
     path->ftok = c->last;
 
     // end of arguments
-    tkn * eoa = matchpair(c);
+    tkn *eoa = matchpair(c);
     
     // the body is a single line
     if(eoa->next->type == INDEXER
@@ -673,7 +673,7 @@ node * fun_def_r(tkn * c){
     // args is not empty
     if(eoa != c->next){
         bool which = F, isptr = F;
-        for(tkn * t = c->next; t != eoa; t = t->next){
+        for(tkn *t = c->next; t != eoa; t = t->next){
             switch (t->type){
                 case INDEXER:
                     if(!which){
@@ -686,7 +686,7 @@ node * fun_def_r(tkn * c){
                             if(!eq_opr_range(t->next, asgn))
                                 cmperr(NOTASGN, t->next, nil);
 
-                            node * exp = exprss_r(t->next, F);
+                            node  *exp = exprss_r(t->next, F);
                             pntr->next = exp;
                             pntr->next->last = pntr;
                             pntr = exp->next;
@@ -751,7 +751,7 @@ node * fun_def_r(tkn * c){
 }
 // function call hotpath rule
 // the given token must be the indexer
-node * funcall_r(tkn * c){
+node *funcall_r(tkn *c){
     node *path = alloc(sizeof(node));
     node *pntr = alloc(sizeof(node));
 
@@ -761,7 +761,7 @@ node * funcall_r(tkn * c){
     path->type = FNCALL;
 
     // end of arguments
-    tkn * eoa = matchpair(c->next);
+    tkn *eoa = matchpair(c->next);
 
     // append function/keyword name
     pntr->type = c->type;
@@ -784,7 +784,7 @@ node * funcall_r(tkn * c){
         // but you seek for exps or literals, not
         // assignments
         bool which = 0;
-        for(tkn * t = c->next->next; t != eoa; t = t->next){
+        for(tkn *t = c->next->next; t != eoa; t = t->next){
             switch (t->type){
                 case INDEXER:
                 case LITERAL:
@@ -823,26 +823,26 @@ node * funcall_r(tkn * c){
     return path;
 }
 // goto jump label hotpath rule
-node * labeldf_r(tkn * c, bool is_swedish){
-    node * path = nil;
+node *labeldf_r(tkn *c, bool is_swedish){
+    node  *path = nil;
     return path;
 }
 // goto jump hotpath rule
-node * jmp_stt_r(tkn * c){
-    node * path = nil;
+node *jmp_stt_r(tkn *c){
+    node  *path = nil;
     return path;
 }
 
 // handle invocation of functions and renaming of them
 // expected path: extrn const [, other] [from <file>] [as name [, ...]]
 // output STTMNT { EXTRN, [PATH], {IMPORT, ALIAS} }
-node * extrn_exp(tkn *c){
+node *extrn_exp(tkn *c){
     // just to be sure
     assert(c and c->type == KEYWORD
     and c->vall.num == KW_EXTRN, nil);
 
-    node * path = alloc(sizeof(node));
-    node * pntr = alloc(sizeof(node));
+    node *path = alloc(sizeof(node));
+    node *pntr = alloc(sizeof(node));
 
     path->type = STTMNT;
     path->ftok = c;
@@ -971,9 +971,9 @@ node * extrn_exp(tkn *c){
 }
 
 // validates path as a righthand or lefthand if ``is_nmsc`` is defined
-node *validthnd(tkn * c, bool is_nmsc, bool unwinding){
-    node * path = alloc(sizeof(node));
-    node * pntr = alloc(sizeof(node));
+node *validthnd(tkn *c, bool is_nmsc, bool unwinding){
+    node *path = alloc(sizeof(node));
+    node *pntr = alloc(sizeof(node));
 
     path->ftok = c;
 
@@ -988,7 +988,7 @@ node *validthnd(tkn * c, bool is_nmsc, bool unwinding){
         path->stt  = pntr;
         path->is_parent = T;
 
-        tkn * innr = c->next->next;
+        tkn *innr = c->next->next;
 
         // this path fallows the syntax: foo[bar + ...] 
         if(innr->next->type == OPERATOR){
@@ -1112,13 +1112,13 @@ node *validthnd(tkn * c, bool is_nmsc, bool unwinding){
 }
 
 // matches the closing or opening token index of a given symbol
-tkn * matchpair(tkn * c){
+tkn *matchpair(tkn *c){
     u64 cnt = 0;
     assert(c->type == LSYMBOL, "the given token is not paired");
 
     // it's a opening symbol
     if(c->apdx == 0){
-        for(tkn * t = c; t->next != EOTT; t = t->next){
+        for(tkn *t = c; t->next != EOTT; t = t->next){
             if(t->type == LSYMBOL and eq_sym(t, c->vall.num, t->apdx)){
                 // if different, it's the pair
                 if(t->apdx != c->apdx) cnt--;
@@ -1130,7 +1130,7 @@ tkn * matchpair(tkn * c){
         }
     // it's a closing one
     } else {
-        for(tkn * t = c; t->last != EOTT; t = t->last){
+        for(tkn *t = c; t->last != EOTT; t = t->last){
             // it's a symbol
             if(t->type == LSYMBOL){
                 // it's the pair that we're looking for
@@ -1149,7 +1149,7 @@ tkn * matchpair(tkn * c){
 }
 
 // checks if the current path is terminated with a semicolon
-void hasscolon(node * out){
+void hasscolon(node *out){
     assert(out != nil && out->ltok, "invalid node to evaluate");
     // is an end of line?
     if(!eq_sym(out->ltok->next, SYM_CLN, 0))
@@ -1157,8 +1157,8 @@ void hasscolon(node * out){
 }
 
 // returns the given node as a string
-char * nodet_to_str(node * n){
-    char * out = alloc(128);
+char *nodet_to_str(node *n){
+    char  *out = alloc(128);
     strcpy(out, "");
     switch(n->type){ 
         case KEYWORD :
@@ -1254,9 +1254,9 @@ char * nodet_to_str(node * n){
     return out;
 }
 
-node *parse(tkn * tkns, cmod mode){
+node *parse(tkn *tkns, cmod mode){
     // if any rule breaks, retreat parsing until here
-    tkn  *ctok = tkns, * eos;
+    tkn  *ctok = tkns, *eos;
     node *ctxt = alloc(sizeof(node));
     node *pntr = nil;
     ctxt->stt  = nil;
@@ -1274,9 +1274,9 @@ node *parse(tkn * tkns, cmod mode){
     }
 
     bool mtch = T;
-    tkn * tok, * old = nil;
+    tkn *tok, *old = nil;
 
-    void * lbls[] = {
+    void *lbls[] = {
         &&case_KEYWORD ,
         &&case_INDEXER ,
         &&case_LITERAL ,

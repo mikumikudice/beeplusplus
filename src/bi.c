@@ -9,9 +9,9 @@
 #include <unistd.h>
 
 int main(i32 argc, char ** args){
-    FILE * fptr;
-    bool   nasm = F, tidx = F, opts = T, strp = F;
-    char * lddf, * outf = nil, * mthd = nil;
+    FILE *fptr;
+    bool  nasm = F, tidx = F, opts = T, strp = F;
+    char *lddf, *outf = nil, *mthd = nil;
 
     // no arguments, so prompt help
     if(argc == 1){
@@ -52,7 +52,7 @@ int main(i32 argc, char ** args){
         }
 
         // create a mutable and freeable copy of the file name
-        char * lddf = alloc(strlen(args[2]) + 1);
+        char *lddf = alloc(strlen(args[2]) + 1);
         strcpy(lddf, args[2]);
 
         // the main module file is the first file
@@ -64,11 +64,11 @@ int main(i32 argc, char ** args){
             " while reading the file", nil, nil);
 
         // prettify name so then the compiler knows the module name
-        char * temp = strrchr(lddf, '/');
+        char *temp = strrchr(lddf, '/');
         if(temp) temp = temp + 1;
 
         // compile
-        cout * nasm = comp(fptr, temp, args[1]);
+        cout *nasm = comp(fptr, temp, args[1]);
         free(lddf);
 
         free(nasm->outn);

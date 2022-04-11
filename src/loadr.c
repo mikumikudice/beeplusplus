@@ -5,7 +5,7 @@
 // max size per line
 u64 csz = LSIZE;
 
-stra load(FILE * fptr){
+stra load(FILE *fptr){
     stra out = {};
     out.lgrst = 0;
     out.arr = alloc(sizeof(char *));
@@ -79,11 +79,13 @@ stra load(FILE * fptr){
             // first realloc
             if(csz == LSIZE * 1.5){
                 assert(out.arr[out.len] == nil, UNEXPCT);
+
                 tkn arrw = {
                     .line  = out.len,
                     .coln  = i,
                 };
-                char * msg = alloc(80);
+                char *msg = alloc(80);
+
                 sprintf(msg, "line too long! greater than %s%d bytes%s", YEL, LSIZE, DEF);
                 wrning(msg, &arrw, nil);
                 free(msg);

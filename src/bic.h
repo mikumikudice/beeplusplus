@@ -88,8 +88,8 @@ typedef struct string_array {
 (a.arr[a.len++] = v, \
 a.arr = realloc(a.arr, (a.len + 1) * sizeof(char *)))
 
-i64 find_itm(stra * a, char * i);
-i64 find_itm(stra * a, char * i){
+i64 find_itm(stra *a, char *i);
+i64 find_itm(stra *a, char *i){
     for(u64 t = 0; t < a->len; t++){
         if(!strcmp(a->arr[t], i)) return t;
     }
@@ -97,7 +97,7 @@ i64 find_itm(stra * a, char * i){
 }
 
 typedef struct pattern {
-    char * s, * e;
+    char *s, *e;
 } ptrn;
 
 // symbols
@@ -127,8 +127,8 @@ enum {
 *  is vector with a key-value  *
 \* system to read its content */
 typedef struct hash_table {
-    char * val;
-    char * key;
+    char *val;
+    char *key;
 } hash;
 
 // list of string metachars
@@ -151,8 +151,8 @@ typedef enum token_t {
 } tknt;
 
 typedef union string_or_int {
-    char * str; // string for literals and indexers
-    u32    num; // number to keywords and operators (pointers)
+    char *str; // string for literals and indexers
+    u32   num; // number to keywords and operators (pointers)
 } aori;
 
 /* token                            *\
@@ -232,14 +232,14 @@ struct ast_node {
 *  global-scopped namespaces.             *
 \*                                       */
 typedef struct cout {
-    char *  outn; // output file name
-    char *  nasm; // nasm code
+    char  *outn; // output file name
+    char  *nasm; // nasm code
 
-    char ** defn; // defined namespaces
-    u64     defc; // dn count
+    char **defn; // defined namespaces
+    u64    defc; // dn count
 
-    char ** extr; // external requirements
-    u64     extc; // er count
+    char **extr; // external requirements
+    u64    extc; // er count
 } cout;
 
 typedef enum comp_mode {
@@ -251,18 +251,18 @@ typedef enum comp_mode {
 *  compiles the target file into  *
 *  a NASM file (as a string).     *
 \*                               */
-cout *comp(FILE * fptr, char * lddf, char * mode);
+cout *comp(FILE *fptr, char *lddf, char *mode);
 
 // code loader
-stra  load(FILE * fptr);
+stra  load(FILE *fptr);
 
 // lexer
 tkn  *lexit();
 
-char *get_tokval(tkn * tok);
+char *get_tokval(tkn *tok);
 
-tkn  *matchpair(tkn * c);
-void  hasscolon(node * out);
+tkn  *matchpair(tkn *c);
+void  hasscolon(node *out);
 
 // parser rules
 node  *constd_r(tkn *c);
@@ -279,35 +279,34 @@ node *funcall_r(tkn *c);
 node *labeldf_r(tkn *c, bool is_swedish);
 node *jmp_stt_r(tkn *c);
 node *extrn_exp(tkn *c);
-node *validthnd(tkn * c, bool is_nmsc, bool unwinding);
+node *validthnd(tkn *c, bool is_nmsc, bool unwinding);
 
 // parser
-node * parse(tkn * tkns, cmod mode);
+node *parse(tkn *tkns, cmod mode);
 
 bool isnumc(char chr);
 bool ishexc(char chr);
 bool validn(char chr);
 
-bool matchs(char * str, bool(*func)(char));
-bool hassym(char * str);
-bool isscpd(char * str, u64 chr);
-i16  iskeyw(char * str);
+bool matchs(char *str, bool(*func)(char));
+bool hassym(char *str);
+bool isscpd(char *str, u64 chr);
+i16  iskeyw(char *str);
 
 u64 upow(u64 b, u64 p);
 
-//char * hextostr(char * str);
-u32  strtohex(char * str);
-u64  strtoptr(char * str);
+u32  strtohex(char *str);
+u64  strtoptr(char *str);
 void free_str();
 
-char * nodet_to_str(node * n);
+char *nodet_to_str(node *n);
 
 // free the given node and all child nodes if `n->is_parent` is true
 void free_node(node *n, bool silent);
 
 // compilation error
-void cmperr(imut char * err, tkn * arw, tkn * cmpl);
-void wrning(imut char * wrn, tkn * arw, tkn * cmpl);
+void cmperr(imut char *err, tkn *arw, tkn *cmpl);
+void wrning(imut char *wrn, tkn *arw, tkn *cmpl);
 
 #define BIC
 

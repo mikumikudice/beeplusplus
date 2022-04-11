@@ -1,55 +1,55 @@
 #define LSIZE (64 << 1) // max of bytes read per line
 
 // compiler messages
-imut char * PRVONHR = "previously opened here";
-imut char * OBS_IFB = "obs: you cannot define an if/elif/else block without curly brackets";
-imut char * IPATH_E = "obs: the compiler was expecting a string: the path to the extern file";
-imut char * PARAMPT = "tip: if you're trying to define a parameter as pointer, use `fn([foo])`";
+imut char *PRVONHR = "previously opened here";
+imut char *OBS_IFB = "obs: you cannot define an if/elif/else block without curly brackets";
+imut char *IPATH_E = "obs: the compiler was expecting a string: the path to the extern file";
+imut char *PARAMPT = "tip: if you're trying to define a parameter as pointer, use `fn([foo])`";
 
 // error messages
-imut char * REALERR = "an unexpected error occurred";
-imut char * UNEXPCT = "unexpected symbol found here";
-imut char * UNCLSTR = "unclosed string found here";
-imut char * UNCCMMT = "unclosed multiline comment found here";
-imut char * UNCBRCK = "unclosed bracket found here";
-imut char * UNCPARN = "unclosed parentheses found here";
-imut char * ALONEXP = "expression out of context found here";
-imut char * CALLERR = "attempt to call an undefined function";
-imut char * CALLINV = "attempt to call an invalid symbol as function";
-imut char * TOOFEWC = "too few arguments in the statement";
-imut char * TOOMUCH = "too much arguments in the statement";
-imut char * MULTIDF = "attempt to define multiple times the same namespace";
-imut char * MDINSTT = "attempt to set multiple definitions in a single statement";
-imut char * LITRIDX = "attempt to use a literal as namespace";
-imut char * KWRDIDX = "attempt to use a keyword as namespace";
-imut char * KWRDVAL = "attempt to use a invalid statement as value";
-imut char * EXPCTDP = "expected a parentheses at the end of this expression";
-imut char * EXPCTEX = "expected expression at this point";
-imut char * EXPCTBD = "expected body definition at this point";
-imut char * EXPVRHD = "expected valid right-hand value";
-imut char * EXPVHND = "expected valid evaluatable value";
-imut char * EXPPPAR = "expected a closing square bracket after parameter as pointer definition";
-imut char * DEFWOEQ = "you cannot assign a variable with shorthand operators while defining it";
-imut char * NOTASGN = "this is not a valid assignment operator";
-imut char * MSMATCH = "mismatch of number of assignators and assignateds in expression";
-imut char * NOTERMN = "no terminator at the end of the expression";
-imut char * NOPTRAR = "no arithmetic is allowed on pointers";
-imut char * NOTFLKW = "this keyword is not callable";
-imut char * INVALID = "invalid namespace name";
-imut char * INVLDIX = "invalid indexing value";
-imut char * INVLDAC = "invalid field access on this namespace";
+imut char *REALERR = "an unexpected error occurred";
+imut char *UNEXPCT = "unexpected symbol found here";
+imut char *UNCLSTR = "unclosed string found here";
+imut char *UNCCMMT = "unclosed multiline comment found here";
+imut char *UNCBRCK = "unclosed bracket found here";
+imut char *UNCPARN = "unclosed parentheses found here";
+imut char *ALONEXP = "expression out of context found here";
+imut char *CALLERR = "attempt to call an undefined function";
+imut char *CALLINV = "attempt to call an invalid symbol as function";
+imut char *TOOFEWC = "too few arguments in the statement";
+imut char *TOOMUCH = "too much arguments in the statement";
+imut char *MULTIDF = "attempt to define multiple times the same namespace";
+imut char *MDINSTT = "attempt to set multiple definitions in a single statement";
+imut char *LITRIDX = "attempt to use a literal as namespace";
+imut char *KWRDIDX = "attempt to use a keyword as namespace";
+imut char *KWRDVAL = "attempt to use a invalid statement as value";
+imut char *EXPCTDP = "expected a parentheses at the end of this expression";
+imut char *EXPCTEX = "expected expression at this point";
+imut char *EXPCTBD = "expected body definition at this point";
+imut char *EXPVRHD = "expected valid right-hand value";
+imut char *EXPVHND = "expected valid evaluatable value";
+imut char *EXPPPAR = "expected a closing square bracket after parameter as pointer definition";
+imut char *DEFWOEQ = "you cannot assign a variable with shorthand operators while defining it";
+imut char *NOTASGN = "this is not a valid assignment operator";
+imut char *MSMATCH = "mismatch of number of assignators and assignateds in expression";
+imut char *NOTERMN = "no terminator at the end of the expression";
+imut char *NOPTRAR = "no arithmetic is allowed on pointers";
+imut char *NOTFLKW = "this keyword is not callable";
+imut char *INVALID = "invalid namespace name";
+imut char *INVLDIX = "invalid indexing value";
+imut char *INVLDAC = "invalid field access on this namespace";
 
 // string array of each line of code
 stra code;
 
-cout * comp(FILE * fptr, char * lddf, char * mode){
+cout *comp(FILE * fptr, char * lddf, char * mode){
     // output
-    cout * out = alloc(sizeof(out));
+    cout *out = alloc(sizeof(out));
 
     // TODO: parse the compiler config comments
     
     // set the default output name
-    char * dummy = alloc(strlen(lddf) + 1);
+    char  *dummy = alloc(strlen(lddf) + 1);
     strcpy(dummy, lddf);
     out->outn  = strgsub(dummy, ".bi", "");
 
@@ -76,7 +76,7 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     printf("+lexing code   ...");
     COL(DEF);
 
-    tkn * tkns = lexit();
+    tkn *tkns = lexit();
 
     // time to lex the file
     crnt = clock();
@@ -96,7 +96,7 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     else cmd = BUILD;
 
     // basic ast
-    node * bast = parse(tkns, cmd);
+    node *bast = parse(tkns, cmd);
     if(cmd == CHECK) goto skip_cmp;
 
     // time to parse the file
@@ -117,8 +117,8 @@ cout * comp(FILE * fptr, char * lddf, char * mode){
     printf("\n");
     free_node(bast, F);
 
-    tkn * tok, * old = nil;
-    i64   cnt = EOTT->apdx;
+    tkn *tok,  *old = nil;
+    i64  cnt = EOTT->apdx;
     // free tokens
     for(tok = tkns; cnt > 0; tok = tok->next, cnt--){
         // only free string values
@@ -180,7 +180,7 @@ void free_node(node * n, bool silent){
     }
 }
 
-void cmperr(imut char * err, tkn * arw, tkn * cmpl){
+void cmperr(imut char *err, tkn * arw, tkn * cmpl){
     // flush compilation messages
     printf("\n\n");
 
@@ -246,7 +246,7 @@ void cmperr(imut char * err, tkn * arw, tkn * cmpl){
     exit(-1);
 }
 
-void wrning(imut char * wrn, tkn * arw, tkn * cmpl){
+void wrning(imut char *wrn, tkn * arw, tkn * cmpl){
     COL(YEL);
     printf("[WARNING]");
     COL(DEF);
