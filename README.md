@@ -91,20 +91,20 @@ Status: work in progress (33% completed)
 - [ ] Additional code documentation
 
 ## Principles of Design
-B++ is not meant to be a "big agenda language", but instead be a tool for me and my needs. *A problematic language for problematic people*. I don't want to be the new overcoming lang that will replace C, but a replacement of C for me. How **I** needed C to be. I usually type things wrong, forget to change things when copying-pasting and I really feel that I need some hard rules to work properly. B++ fits there. So these are the principles of design and the problems I have that they solve. These are the 3 rocks that over I'll build my church.
+B++ is not meant to be a "big agenda language", but instead be a tool for me and my needs. *A problematic language for problematic people*. I don't want to be the new overcoming lang that will replace C, but a replacement of C for me. How _I_ needed C to be. I usually type things wrong, forget to change things when copying-pasting and I really feel that I need some hard rules to work properly. B++ fits there. So these are the principles of design and the problems I have that they solve. These are the 3 rocks that over I'll build my church.
 
 ### 1: Readability, consistency and simplicity
 Code must be understandable for both humans and computers. And code must be simple as possible and easy to read and understand - no things like the GNU libc or the Kernel Linux that have thousands of macros that sounds like deep black magic. The language also need to be concise and minimalistic to keep things easy to learn and implement. Also, easy to keep documented, because documentation is the pillar of all good programs. That implies in:
-* few keywords in the language.
+* few keywords in the language and no features that make things more complicated, but features that make things simpler.
 * simple and concise semantics and grammar.
 * no pre-compilation macros or ambiguous desugar code.
 * no "1 problem, multiple solutions" approach, but instead "thousands of problems, one solution".
 
 ### 2: Safe when testing, fast when running
 I want a program that instead of crash and obligate me to debug hours and hours, just to figure out that an array was being read out of bounds, warns me about where, when and how an invalid read/write happened. But also, when everything is cleaned up and well optimized, I want to make a unsafe-checked program that runs as fast as possible. That implies in:
-* typesafe and fixed and simple ruleset for all types during compile-time.
-* memory safe during run-time in debug mode.
-* massive optimization while producing understandable NASM code in release mode.
+* type-safe run-time and a fixed and simple ruleset for all types during compile-time.
+* memory-safe during run-time in debug mode.
+* massive optimization while still producing understandable NASM code in release mode.
 
 ### 3: Reliable and lightweight
 Also, the code must be efficient and well developed by the developer, to then be well optimized and implemented by the compiler. Both developer and program should be reliable for each other. That implies in:
