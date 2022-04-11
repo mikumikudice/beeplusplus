@@ -1,3 +1,7 @@
+#ifndef STRLIB
+    #include "strlib.h"
+#endif
+
 u64 strarrlen(char ** arr, u64 len){
 
     u64 out = 0;
@@ -73,7 +77,7 @@ i64 strafnd(char *str, const char *pat, i64 off){
     if(size == ptsz)
     if(!strcmp(str, pat)) return 0;
 
-    // offseted string
+    // offsetted string
     char sub[ptsz + 1];
     // loop until the end
     for(i64 o = off; o + ptsz <= size; o++){
@@ -124,7 +128,6 @@ i64 str_arrfnd(char **arr, const char *val, u64 len){
 
 // stack-allocated arrlen find
 i64 stk_strarrfnd(char **arr, char *val){
-
     for(u64 i = 0; i < sizeof(arr); i++){
         // check every item in array
         if(!strcmp(arr[i], val)) return i;
@@ -133,7 +136,7 @@ i64 stk_strarrfnd(char **arr, char *val){
 }
 
 // remember that str is freed after calling
-charstr_sub(char *str, i64 i, i64 f){
+char *str_sub(char *str, i64 i, i64 f){
     // sugar indexes
     u64 len = strlen(str);
     if(i < 0) i = len + i + 1;
@@ -174,7 +177,9 @@ char *strgsub(char *str, const char *pat, char *sup){
     if(strfnd(str, pat) == -1) return str;
     if(!strcmp(str, pat)){
         free(str);
-        return "";
+        char *out = malloc(2);
+        strcpy(out, "");
+        return out;
     }
     if(!strcmp(pat, sup)) return str;
 

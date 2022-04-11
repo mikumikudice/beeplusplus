@@ -1,4 +1,5 @@
 #include <string.h>
+#define STRLIB
 
 #ifndef bcclib
     #include "bcclib.h"
@@ -22,8 +23,8 @@
 
 u64 strarrlen(char **arr, u64 len);
 
-i64  strfnd(char *str, const char *pat);
-u64  strfndc(char *str, const char *pat);              // count of finds
+i64 strfnd(char *str, const char *pat);
+u64 strfndc(char *str, const char *pat);              // count of finds
 i64 strfndl(char *str, const char *pat);              // last found
 i64 strafnd(char *str, const char *pat, i64 off); // offsetted search
 
