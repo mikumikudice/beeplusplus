@@ -8,7 +8,7 @@ The things you may already know.
 You'll see several times functions like `putc`, `getc`, `puts`. All those need to be included in your file when writing in real world (see [external code](#External-code) for further explanation). But for reasons of simplicity and didactic, we omitted the external requirement code.
 
 ### Hello world
-Like, C, but _Better_.
+Like C, but _Better_.
 ```c
 main(){
     putc('hi!*n');
@@ -35,7 +35,7 @@ foo = 45;
 ```
 
 ### Types definition
- There are only three types in B, that all are subsets of each other. All of them 32 bits (double word). They are `char`, `pntr` (pointer) and `auto` (signed integer). You can assign a `char` to `auto`, but not the opposite. A `pntr` can only be assigned by an address (`&char`, `&auto` or `&pntr`) or by another pointer. And finally, `char` can only be assigned with literals, a pointer value (see [pointers](#pointers)) or another `char`. You can also define (multi-dimensional) arrays (both C-like and modern ones) of these types.
+There are only three types in B, that all are subsets of each other. All of them 32 bits (double word). They are `char`, `pntr` (pointer) and `auto` (signed integer). You can assign a `char` to `auto`, but not the opposite. A `pntr` can only be assigned by an address (`&char`, `&auto` or `&pntr`) or by another pointer. And finally, `char` can only be assigned with literals, a pointer value (see [pointers](#pointers)) or another `char`. You can also define (multi-dimensional) arrays, both C-like and default ones, of these types.
 ```c
 char _hi = 'hi!';
 auto foo, bar = 4, 5; // multiple assignments are also valid
@@ -47,12 +47,14 @@ _hi = foo + 3; // not that safe, so it's not allowed
 the = &_hi; // also allowed
 the = _hi;  // when a non-address value is assigned to a pointer, it decays into a variable
 
-the = 0xa145b6; // what the heck, extremely prohibited! Only pointers or unary & expressions
+char[3] str = ['hell', 'o wo', 'rld!']; // unlike C and many others, arrays are defined with square brackets
+printf("%a*n", str); // string literals are packed in 4 by 4 characters (a word)
 ```
 
 Note that:
 * pointers don't have to be initialized on declaration, but they may not be used before initializing. This is ensured at compile-time. The default value of pointers is `nil`. See [Pointers](BASIC.md#pointers) for further explanation.
 * there is no float type by default.
+* see in the next section the difference between string literals and char arrays, "%a" and "%s" and other stuff related to strings.
 
 ### Literals
 It's just a short topic to talk about strings, essentially.
@@ -65,7 +67,7 @@ pntr str = "hi!";
 
 Please also note that:
 * literal strings are immutable, just like in C.
-* `.len` and `.cap` of literal strings are allways the same.
+* `.len` and `.cap` of literal strings have allways the same value.
 * these strings are stored in the `.rodata` section of the produced NASM code (check the [advanced tutorial](ADVANCED.md) for further information).
 
 It's also a good idea to emphasize that the last bit of the 32 avaliable for each variable are used to indicate if the value of a pointer is a function / structure (see more on [pointers](#pointers)) or a variable address, or a distinct value or a normal one when it's used by a variable, so at the end you have actually 31-bit variables.
@@ -73,17 +75,17 @@ It's also a good idea to emphasize that the last bit of the 32 avaliable for eac
 ### Arrays
 The default array in B++, that you may be end using most, is a record of various items of the same type. You can gather a couple of variables together in a single namespace, accessing them by index, like that:
 ```c
-auto[4] nums = {2, 3, 5, 7, 11};                         // default arrays
+auto[4] nums = [2, 3, 5, 7, 11]; // default arrays
 
-auto spam = nums[4];     // valid
-nums[5] = 13;            // invalid. write out of bounds
-nums[nums[3]] = 16;      // invalid too
-nums[nums.len - 1] = 13; // you also can access it's length
+auto spam = nums[4];             // valid
+nums[5] = 13;                    // invalid. write out of bounds
+nums[nums[3]] = 16;              // invalid too
+nums[nums.len - 1] = 13;         // you also can access it's length
 ```
 
 You may also want to use sometimes C-like arrays, that are "pointers for multiple items". You should not use that unless you are dealing with C code or low level stuff, but if you really need to, here's how:
 ```c
-auto[^] fibonacci = {0, 1, 1, 2, 3, 5, 8};
+auto[^] fibonacci = [0, 1, 1, 2, 3, 5, 8];
 
 fibonacci = fibonacci[1]; // valid, but please avoid that
 fibonacci[3] = 4;         // naturally valid
@@ -98,7 +100,7 @@ Note that:
 
 Also, it's good to assert that in debug mode, the compiler will work like this with C-like pointers overflow:
 ```c
-auto[^] myarr = {1, 3, 1, 7, 8, 8};
+auto[^] myarr = [1, 3, 1, 7, 8, 8];
 auto index = 4;
 
 myarr[index] = 9; // valid, because 4 <= sizeof(myarr) / sizeof(myarr[0])
@@ -164,7 +166,7 @@ main (){ // the function syntax is just a constant assignment: ``main :: (){}``
 };
 ```
 
- Note that:
+Note that:
 * to access outer scopes' namespaces you may use `extrn`, this allow us to know for sure if an function is pure, what values a piece of code need to work when refactoring and kind of creates a type of local encapsulation. This idea is borrowed from Jai (thanks John).
 * functions can only access global fields with extrn.
 * functions are pointers and as such you may treat them.
@@ -190,11 +192,11 @@ if today * 1 == 1 {
 };
 ```
 
- Note that:
+Note that:
 * you may noticed a new thing: the if/else blocks without parenthesis (also the `elif` keyword). You can check these on [control-structures](BASIC.md#control-structures).
 * doing mathematics on distinct values works normally, resulting in non distinct values.
 
- Enums are basically the same thing. Actually, just a short way to define multiple context-related distinct values, just like that:
+Enums are basically the same thing. Actually, just a short way to define multiple context-related distinct values, just like that:
 ```c
 enum { // no typedef, it's like normal global values
     firsday = 1,
@@ -207,7 +209,7 @@ auto today = fourthday;
 printf("today is the %dth day of the week, %t*n", today, today);
 ```
 
- Note that:
+Note that:
 * the distinct values, as constant tokens, can be represented as strings using `getval`. In this case, it's getting read by the `printf` function by referring to it as `%t`. It stands for "token".
 
 You can also define the interval factor of the enum items, like this:
@@ -268,24 +270,24 @@ Note that:
 * there is the `break` keyword, but it's used in the next section.
 
 #### FOR loop
- The `for` loop has two syntaxes, that you may already know. These are the repetition and interaction modes. The repetition is the fallowing one:
+The `for` loop has two syntaxes, that you may already know. These are the repetition and interaction modes. The repetition is the fallowing one:
 ```c
 for auto c = 0; c < 256; c += 1 { // just like the c for loop
     printf("the %dth UTF-8 char is %c*n", c, c);
 };
 ```
- Note that:
+Note that:
 * you may use the `auto` or `char` keywords when using this mode, because unlike the next one, you can't infer the type from the value (actually you can, but a good automatic inference is hard to implement and sometimes also hard to understand).
 
 The interaction mode is like this:
 ```c
-auto list = {1, 1, 2, 3, 5, 8, 13};
+auto list = [1, 1, 2, 3, 5, 8, 13];
 
 for i in list { // no need to use `auto`
     printf("%d*n", i);
 };
 ```
- Note that:
+Note that:
 * it's not needed to define `i` with `auto` or something like that because it is already intended to be a definition, and the type is inferred from `list`, so no need for unnecessary keywords.
 * only these two modes are allowed in B++. The compiler will complain if you don't fallow any of these syntaxes.
 
@@ -379,7 +381,7 @@ take_my_ptr([myptr]){
 main(){
     extrn take_my_ptr;
 
-    pntr[4] foo = {"1", "1", "3", "5"};
+    pntr[4] foo = ["1", "1", "3", "5"];
     take_my_ptr(foo);
     
     printf("%r", foo); // prints "1, 2, 3, 5"
@@ -428,7 +430,8 @@ Note that:
 # Compilation flags
 In B++ you don't pass the compilation configuration to the compiler by the command line, you pass it through the file itself, by doing this:
 ```c
-/* #config
+/*
+[config]
 output.name   = "main.bin"
 output.format = "NASM"
 safety.RW.warning = true
@@ -442,17 +445,24 @@ main(){
 };
 ```
 
+Note that:
+* you may put at the begining of the comment "\[config\]". This is the way the compiler knows if it's the comment should be parsed or not.
+
 The configuration fields avaliable are:
 * ``output``: this field only holds other fields
-    * ``.name``: the output file name.
-    * ``.format``: the output file format; either "binary", "object file" or "NASM".
+    * ``.name``: the output file name. Value must be a string.
+    * ``.format``: the output file format; either `"binary"`, `"object file"` or `"NASM"`.
 
 * ``safety``: this field also only holds other fields:
-    * ``.enabled``: sets the activation state of the safety features.
-    * ``.forced``: enables the safety features also in release mode when true.
+    * ``.enabled``: sets the activation state of the safety features; either `true` or `false`.
+    * ``.forced``: enables the safety features also in release mode when true; either `true` or `false`.
     * ``.RW``: another field that hold other fields:
-        * `.warning`: warns you about read/writes out of bounds.
+        * `.warning`: warns you about read/writes out of bounds; either `true` or `false`.
+        * `.reaction`: sets how the program should react to invalid R/W; either `"panic"`, `"warn_twoscomp"` or `"warn_lockmax"`.
+            * `panic`: the program exits with an error when an invalid R/W happens.
+            * `warn_twoscomp`: (default) prints a warning when an invalid R/W happens, but continue executing and sets the index to the overflowed value (index % max).
+            * `"warn_lockmax"`: prints a warning warning when an invalid R/W happens, but continue executing and sets the index to the max/min value (closest one);
 
 * ``stdlib``: this field also only holds other fields:
-    * ``enabled``: tells the compiler if it should allow the file require constants from the standard library.
-    * ``path``: tells the compiler where to look for the standard library. 
+    * ``enabled``: tells the compiler if it should allow the file require constants from the standard library; either `true` or `false`.
+    * ``path``: tells the compiler where to look for the standard library. Value must be a string.
