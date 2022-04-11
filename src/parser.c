@@ -700,13 +700,10 @@ node *fun_def_r(tkn *c){
                             if(isptr){
                                 if(eq_sym(t->next, SYM_SQR, 1)){
                                     isptr = F;
-                                    pntr->type = PPARAM;
-                                // syntax error
-                                } else cmperr(EXPPPAR, t->next, 
-                                    &(tkn){.vall.str = PARAMPT, .apdx = 1}
-                                );
+                                    t = t->next;
+                                }
+                                pntr->type = PPARAM;
                                 // skip this symbol
-                                t = t->next;
 
                             } else pntr->type = PARAMT;
                         }
@@ -718,10 +715,8 @@ node *fun_def_r(tkn *c){
                     if(t->vall.num == SYM_COM){
                         if(which) which = F;
                         else cmperr(UNEXPCT, t, nil); 
-
-                        if(!eq_sym(t, SYM_COM, 0))
-                            cmperr(UNEXPCT, t, nil);
                         break;
+
                     // the parameter is a pointer
                     } else if(eq_sym(t, SYM_SQR, 0)){
                         if(!which) {
@@ -736,6 +731,15 @@ node *fun_def_r(tkn *c){
                     cmperr(UNEXPCT, t, nil);
             }
         }
+        // syntax errors
+        if(!which) cmperr(UNEXPCT, eoa->last, nil);
+        else if(isptr) cmperr(EXPPPAR, eoa,
+            &(tkn){
+                .vall.str = PRVONHR,
+                .line = c->next->line,
+                .coln = c->next->coln,
+            }
+        );
     }
 
     // validate the body of the function
