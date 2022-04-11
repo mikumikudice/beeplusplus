@@ -99,6 +99,7 @@ Code must be understandable for both humans and computers. And code must be simp
 * simple and concise semantics and grammar.
 * no pre-compilation macros or ambiguous desugar code.
 * no "1 problem, multiple solutions" approach, but instead "thousands of problems, one solution".
+* no useless legacy garbage, like "\b" or "\v" escape chars.
 
 ### 2: Safe when testing, fast when running
 I want a program that instead of crash and obligate me to debug hours and hours, just to figure out that an array was being read out of bounds, warns me about where, when and how an invalid read/write happened. But also, when everything is cleaned up and well optimized, I want to make a unsafe-checked program that runs as fast as possible. That implies in:
