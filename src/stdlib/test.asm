@@ -1,16 +1,16 @@
 segment .data
-
 segment .rodata
-
+    msg db '> '
 segment .bss
-    buff resb 4
 
 segment .text
-global _start
-
-%include "stdio.asm"
+    global _start
+    extern getc, putc, exit
 
 _start:
+    mov   eax ,  msg
+    call  putc
+
     call  getc
     call  putc
     

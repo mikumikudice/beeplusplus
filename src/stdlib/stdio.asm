@@ -1,9 +1,4 @@
 ; usage:
-; your code must have defined a variable in .bss
-; segment as `resb 4` to be able to use this lib
-; ==============================================
-; your must include this file bellow the segment
-; named `.text`
 ; ==============================================
 ; input order (max 6 arguments):
 ; EDI ESI EDX ECX EBX EAX
@@ -11,8 +6,15 @@
 ; output order (max 6 return values):
 ; EAX EBX ECX EDX ESI EDI
 
+segment .bss
+    buff resb 4
+
 ; getc returns 4 byte char read from the input stream
 ; returns word char in EAX
+
+segment .text
+global getc, putc, exit
+
 getc:
     mov   ecx ,  buff
     mov   edi ,  4
@@ -61,7 +63,6 @@ putc:
     jnz  .prnt
     .endp:
     ret
-
 
 ; exit(code)
 exit:
