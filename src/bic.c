@@ -5,6 +5,7 @@ imut char *PRVONHR = "previously opened here";
 imut char *OBS_IFB = "obs: you cannot define an if/elif/else block without curly brackets";
 imut char *IPATH_E = "obs: the compiler was expecting a string: the path to the extern file";
 imut char *PARAMPT = "tip: if you're trying to define a parameter as pointer, use `fn([foo])`";
+imut char *FORSNTX = "tip: the `for` loop syntax is: for [asgn;] expr [;expr] { ... };";
 
 // error messages
 imut char *REALERR = "an unexpected error occurred";
@@ -38,6 +39,7 @@ imut char *NOTFLKW = "this keyword is not callable";
 imut char *INVALID = "invalid namespace name";
 imut char *INVLDIX = "invalid indexing value";
 imut char *INVLDAC = "invalid field access on this namespace";
+imut char *EMPTYIM = "empty implementations are invalid";
 
 // string array of each line of code
 stra code;
@@ -183,6 +185,10 @@ void free_node(node * n, bool silent){
 void cmperr(imut char *err, tkn * arw, tkn * cmpl){
     // flush compilation messages
     printf("\n\n");
+
+    // in case of don't know where false-positive come from
+    // uncomment the fallowing line
+    // printf(4);
 
     // common prefix
     fprintf(stderr, RED);

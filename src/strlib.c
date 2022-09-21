@@ -177,7 +177,7 @@ char *strgsub(char *str, const char *pat, char *sup){
     if(strfnd(str, pat) == -1) return str;
     if(!strcmp(str, pat)){
         free(str);
-        char *out = malloc(2);
+        char *out = alloc(2);
         strcpy(out, "");
         return out;
     }

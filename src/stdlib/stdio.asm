@@ -13,7 +13,7 @@ segment .bss
 ; returns word char in EAX
 
 segment .text
-global getc, putc, exit
+global getc, putc, puts, exit
 
 getc:
     mov   ecx ,  buff
@@ -62,6 +62,40 @@ putc:
     cmp   ebx ,  0
     jnz  .prnt
     .endp:
+    ret
+
+; puts(char[])
+; puts prints a string. If it ends with newline, it doesn't print one at the end
+; otherwise does
+;
+; the string type memory layout is
+; [ 32bit | 32bit | ... ]
+; [  cap  |  len  | cnt ]
+puts:
+    mov   esi ,  eax                ; get the address of the string itself
+    add   esi ,  8
+
+    mov   ebx ,  eax                ; get the length of the string
+    add   ebx ,  4
+    mov   ebx , [ebx]
+
+    mov   eax ,  ebx                ; make the length multiple of 4 to avoid underflows
+    xor   edx ,  edx
+    mov   ecx ,  4
+    div   ecx
+    add   ebx ,  edx
+
+    mov   eax ,  esi
+    .prnt:                          ; print by char (4 bytes)
+    push eax
+    call putc
+    pop  eax
+
+    add  eax  ,  4
+    sub  ebx  ,  4                  ; minus 4 bytes to print
+    cmp  ebx  ,  0
+    jne .prnt
+
     ret
 
 ; exit(code)

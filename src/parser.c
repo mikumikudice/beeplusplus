@@ -13,11 +13,14 @@
 #define eq_opr_range(tok, t)\
 (tok->type == OPERATOR and tok->vall.num >= t[0] and tok->vall.num <= t[1])
 
-#define eq_kwd(tok, t)\
+#define eq_kwd(tok, k)\
+(tok->type == KEYWORD and tok->vall.num == k)
+
+#define eq_kwd_range(tok, t)\
 (tok->type == KEYWORD and tok->vall.num >= t[0] and tok->vall.num <= t[1])
 
 // appends a token at the end of the path as a node
-#define tok_to_node(n, t){\
+#define push_node(n, t){\
     n->next = alloc(sizeof(node));\
     n->next->last = n;\
     n->next->type = t->type;\
@@ -27,6 +30,7 @@
 
 // code path rules
 
+// variable namespace definition codepath's rule
 node *define_r(tkn *c){
     node *path = alloc(sizeof(node));
     node *pntr = alloc(sizeof(node));
@@ -59,7 +63,7 @@ node *define_r(tkn *c){
     } else if(c->next->type == INDEXER){
         path->ltok = c->next;
         path->end  = pntr;
-        tok_to_node(pntr, c->next);
+        push_node(pntr, c->next);
 
     // handle errors
     } else if(c->next->type == LITERAL)
@@ -75,7 +79,7 @@ node *define_r(tkn *c){
     return path;
 }
 
-// assignment hotpath's rule
+// assignment codepath's rule
 node *assign_r(tkn *c, bool prnd){
     // validate operator
     if(!eq_opr_range(c, asgn))
@@ -97,7 +101,7 @@ node *assign_r(tkn *c, bool prnd){
     if(pntr == nil) cmperr(INVALID, strt, nil);
 
     // now push the operator itself
-    tok_to_node(pntr, c);
+    push_node(pntr, c);
 
     // validate the right-hand
     if(c->next->type == INDEXER or c->next->type == LITERAL){
@@ -125,10 +129,6 @@ node *assign_r(tkn *c, bool prnd){
             //                 you are here
 
             prox = pntr->ltok->next;
-
-            if(eq_sym(prox, SYM_COM, 0)
-            or eq_sym(prox, SYM_CLN, 0)) goto finish;
-            else cmperr(UNEXPCT, prox, nil);
         }
     // the righthand is an expression
     } else if(eq_sym(c->next, SYM_PAR, 0)){
@@ -155,7 +155,7 @@ node *assign_r(tkn *c, bool prnd){
 
             if(pntr == nil) cmperr(EXPVRHD, prox, nil);
 
-            // after the tok_to_node, the
+            // after node-pushing it, the
             // pntr's last token field is
             // null (other cases aren't).
             pntr->ltok = prox;
@@ -164,7 +164,6 @@ node *assign_r(tkn *c, bool prnd){
     // syntax error
     } else cmperr(UNEXPCT, c->next, nil);
 
-    finish:
     // check for multiple definitions
     while(eq_sym(prox, SYM_COM, 0)){
         // evaluate next assignation
@@ -178,7 +177,7 @@ node *assign_r(tkn *c, bool prnd){
 
     if(prnd){
         if(eq_sym(prox, SYM_PAR, 1)){
-            tok_to_node(pntr, prox);
+            push_node(pntr, prox);
             prox = prox->next;
         } else cmperr(EXPCTDP, prox, nil);
     }
@@ -194,25 +193,107 @@ node *assign_r(tkn *c, bool prnd){
     assert(path->stt == pntr->next, nil);
     return path;
 }
-// structure definition hotpath's rule
+// structure definition codepath's rule
+// the given token must be the first indexer
 node *strdef_r(tkn *c){
-    node *path = nil;
-    assert(F, "structures not implemented yet");
+    assert(c->type == INDEXER, nil);
+    assert(eq_sym(c->next, SYM_BRA, 0), nil);
+
+    node *path = alloc(sizeof(node));
+    node *pntr = alloc(sizeof(node));
+
+    path->stt  = pntr;
+    path->ftok = c;
+    path->type = STRDEF;
+    path->is_parent = T;
+
+    pntr->type = KEYWORD;
+    pntr->vall = c;
+
+    // match end of expression
+    path->ltok = matchpair(c->next);
+    if(path->ltok == c->next->next)
+        return path;
+
+    // validate every field assignment
+    for(tkn *p = c->next->next; p != path->ltok; p = p->next){
+        node *fld = validthnd(p, F, F);
+        // the field value is an expression
+        if(eq_kwd_range(fld->ltok->next, asgn)){
+            tkn *temp = fld->ltok->next;
+            free(fld);
+
+            pntr->next = exprss_r(temp, F);
+            pntr->next->last = pntr;
+            pntr = pntr->next;
+
+        // it's only one value
+        } else {
+            pntr->next = fld;
+            pntr->next->last = pntr;
+            pntr = pntr->next;
+            pntr->ltok = p;
+        }
+    }
+    
+    path->ltok = pntr->ltok;
+    path->end  = pntr;
+
+    path->end->next = path->stt;
+    path->stt->last = path->end;
+
     return path;
 }
-// enum definition hotpath's rule
+// enum definition codepath's rule
 node *enumdf_r(tkn *c){
     node *path = nil;
     assert(F, "enums not implemented yet");
     return path;
 }
-// structure literal hotpath's rule
+// structure literal codepath's rule
 node *struct_r(tkn *c){
-    node *path = nil;
-    assert(F, "structures not implemented yet");
+    assert(eq_kwd(c, KW_STRUCT), nil);
+    assert(eq_sym(c->next, SYM_BRA, 0), nil);
+
+    node *path = alloc(sizeof(node));
+    node *pntr = alloc(sizeof(node));
+
+    path->ftok = c;
+    path->stt  = pntr;
+
+    pntr->type = INDEXER;
+    pntr->vall = c;
+
+    // match end of expression
+    path->ltok = matchpair(c->next);
+
+    // no fields defined
+    if(path->ltok == c->next->next)
+        cmperr(EMPTYIM, c->next->next, nil);
+    
+    // validate every field
+    for(tkn *p = c->next->next; p != path->ltok; p = p->next){
+        // check if syntax matches
+        if(eq_kwd_range(p, ldef)){
+            pntr->next = define_r(p);
+            pntr->next->last = pntr;
+            pntr = pntr->next;
+            
+            // move to the end of the path
+            p = pntr->ltok;
+
+        // not a field definition
+        } else cmperr(UNEXPCT, p, nil);
+    }
+    path->end = pntr;
+    path->ltok = pntr->ltok;
+
+    path->end->next = path->stt;
+    path->stt->last = path->end;
+
     return path;
 }
-// constant definition hotpath's rule
+// constant definition codepath's rule
 node *constd_r(tkn *c){
     node *path = alloc(sizeof(node));
     node *pntr = alloc(sizeof(node));
@@ -270,7 +351,7 @@ node *constd_r(tkn *c){
 
     // value
     } else if(c->next->type == INDEXER or c->next->type == LITERAL){
-        tok_to_node(pntr, c->next);
+        push_node(pntr, c->next);
         
         // finish with metadata
         path->ltok = c->next;
@@ -287,7 +368,7 @@ node *constd_r(tkn *c){
     }
     return nil;
 }
-// arithmetic and boolean expressions hotpath's rule
+// arithmetic and boolean expressions codepath's rule
 node *exprss_r(tkn *c, bool prnd){
     // redirect if it's an assignment
     if(eq_opr_range(c, asgn) and c->apdx == 0)
@@ -312,7 +393,7 @@ node *exprss_r(tkn *c, bool prnd){
         path->stt  = pntr;
 
         // append operator
-        tok_to_node(pntr, c);
+        push_node(pntr, c);
 
         // both sides are valid members
         if(c->next->type == INDEXER
@@ -326,7 +407,7 @@ node *exprss_r(tkn *c, bool prnd){
 
             // simple expression
             } else {
-                tok_to_node(pntr, c->next);
+                push_node(pntr, c->next);
                 path->ltok = c->next;
             }
         // so is righthand invalid?
@@ -352,11 +433,11 @@ node *exprss_r(tkn *c, bool prnd){
 
                 // just a value surrounded by parentheses
                 } else if(rhnd->type == INDEXER or rhnd->type == LITERAL){
-                    tok_to_node(pntr, rhnd);
+                    push_node(pntr, rhnd);
                     path->ltok = rhnd;
                 }
             // function-like keywords
-            } else if(eq_kwd(c->next, funl)){
+            } else if(eq_kwd_range(c->next, funl)){
                 pntr->next = funcall_r(c->next);
                 pntr->next->last = pntr;
                 pntr = pntr->next;
@@ -438,13 +519,13 @@ node *exprss_r(tkn *c, bool prnd){
     path->stt->last = path->end;
     return path;
 }
-// array definition hotpath rule
+// array definition codepath rule
 node *arrdef_r(tkn *c){
     node *path = nil;
     assert(F, "arrays not implemented yet");
     return path;
 }
-// statement declaration hotpath rule
+// statement declaration codepath rule
 node *sttmnt_r(tkn *c){
     node *path = alloc(sizeof(node));
     node *pntr = alloc(sizeof(node));
@@ -481,35 +562,50 @@ node *sttmnt_r(tkn *c){
     \* -tements with fewer cases.               */
 
     // true statements
-    if(eq_kwd(c, trus)){
+    if(eq_kwd_range(c, trus)){
         bool jmpd = F, inpar = F;
         tkn *innr = c->next;
         // just jump over parentheses for now
         if((inpar = eq_sym(innr, SYM_PAR, 0))) innr = innr->next;
 
     run_again:
-        // push pointer to the operator
+        // main expression of the statement (keyword [exp] {};)
         if(innr->type == INDEXER or innr->type == LITERAL){
 
-            pntr->next = validthnd(innr, F, F);
-            if(pntr->next == nil) cmperr(EXPVHND, innr, nil);
-            
-            pntr->next->last = pntr;
-            pntr = pntr->next;
+            // whole expression
+            if(innr->next->type == OPERATOR){
+                pntr->next = exprss_r(innr->next, F);
 
-            innr = pntr->ltok->next;
-        }
+                pntr->next->last = pntr;
+                pntr = pntr->next;
 
-        // main expression of the statement (keyword [exp] {};)
-        if(innr->type == OPERATOR){
-            // avoid doing the same thing twice
-            pntr = pntr->last;
-            free_node(pntr->next, T);
+                innr = pntr->ltok->next;
+            // single value
+            } else {
+                pntr->next = validthnd(innr, F, F);
+                if(pntr->next == nil) cmperr(EXPVHND, innr, nil);
+                
+                pntr->next->last = pntr;
+                pntr = pntr->next;
 
-            // evaluate statement expression
-            pntr->next = exprss_r(innr, inpar);
-            pntr->next->last = pntr;
-            pntr = pntr->next;
+                innr = pntr->ltok->next;
+            }
+
+            // last expression of the loop
+            if(eq_kwd(c, KW_FOR) and
+            eq_sym(pntr->ltok->next, SYM_CLN, 0)){
+                tkn* stt = pntr->ltok->next->next;
+                if(stt->next->type == OPERATOR){
+                    // handle expression
+                    pntr->next = exprss_r(stt->next, F);
+                    pntr->next->last = pntr;
+                    pntr = pntr->next;
+                // expression not found
+                } else cmperr(UNEXPCT, stt->next, &(tkn){
+                    .vall.str = FORSNTX,
+                    .apdx = 1
+                });
+            }
 
             tkn *body_s = pntr->ltok->next;
             if(eq_sym(body_s, SYM_PAR, 1)) body_s = body_s->next;
@@ -528,7 +624,7 @@ node *sttmnt_r(tkn *c){
                 &(tkn){.vall.str = OBS_IFB, .apdx = 1});
 
         // statement definition block (keyword [asgn]; exp {};)
-        } else if(eq_kwd(innr, ldef)){
+        } else if(eq_kwd_range(innr, ldef)){
             // only a single definition block is allowed
             if(!jmpd){
                 node *defn = define_r(innr);
@@ -553,9 +649,11 @@ node *sttmnt_r(tkn *c){
         } else cmperr(EXPCTEX, innr, nil);
     
     // body holder
-    } else if(eq_kwd(c, body)){
+    } else if(eq_kwd_range(c, body)){
         if(eq_sym(c->next, SYM_BRA, 0)){
-            pntr->next = parse(c->next, SCOPE);
+            push_node(pntr, c);
+
+            pntr->next = parse(c->next->next, SCOPE);
             pntr->next->last = pntr;
             pntr = pntr->next;
 
@@ -566,43 +664,40 @@ node *sttmnt_r(tkn *c){
         cmperr(EXPCTBD, c->next, &(tkn){.vall.str = OBS_IFB, .apdx = 1});
 
     // expression holders
-    } else if(eq_kwd(c, hldr)){
+    } else if(eq_kwd_range(c, hldr)){
         tkn *exp = c->next;
-
         // parentheses
         if(eq_sym(exp, SYM_PAR, 0)) exp = exp->next;
 
-        // it's a label or a value to return
-        if(exp->type == INDEXER){
-            pntr->next = validthnd(exp, F, F);
-            pntr->next->last = pntr;
-            pntr = pntr->next;
+        // return statement
+        if(c->vall.num == KW_RETURN){
+            if(exp->type == LITERAL or exp->type == KEYWORD){
+                pntr->next = validthnd(exp, F, F);
+                pntr->next->last = pntr;
+                pntr = pntr->next;
 
-            path->ltok = exp;
+                path->ltok = exp;
 
-            if(pntr == nil) cmperr(EXPVHND, exp, nil);
-        } else {
-            if(c->vall.num == KW_RETURN){
-                if(exp->type == LITERAL or exp->type == KEYWORD){
-                    pntr->next = validthnd(exp, F, F);
-                    pntr->next->last = pntr;
-                    pntr = pntr->next;
+                if(pntr == nil) cmperr(EXPVHND, exp, nil);
+            } else cmperr(EXPVHND, exp, nil);
 
-                    path->ltok = exp;
+        // extrn statement
+        } else if(c->vall.num == KW_EXTRN){
+            free(path);
+            free(pntr);
+            return extrn_exp(c);
 
-                    if(pntr == nil) cmperr(EXPVHND, exp, nil);
-                } else cmperr(EXPVHND, exp, nil);
-
-            // extrn statement
-            } else if(c->vall.num == KW_EXTRN){
-                free(path);
-                free(pntr);
-                return extrn_exp(c);
-            }
+        // it's a goto statement
+        } else if(c->vall.num == KW_GOTO){
+            if(exp->type == INDEXER){
+                push_node(pntr, exp);
+                path->ltok = exp;
+            // Unexpected symbol
+            } else cmperr(UNEXPCT, exp, nil);
         }
 
     // single statements
-    } else if(eq_kwd(c, sngl)){
+    } else if(eq_kwd_range(c, sngl)){
         if(!eq_sym(c->next, SYM_CLN, 0)) cmperr(UNEXPCT, c->next, nil);
         else {
             path->ltok = c;
@@ -611,7 +706,7 @@ node *sttmnt_r(tkn *c){
             pntr->last = pntr;
         }
     // function-like
-    } else if(eq_kwd(c, funl)){
+    } else if(eq_kwd_range(c, funl)){
         if(!eq_sym(c->next, SYM_PAR, 0)) cmperr(UNEXPCT, c->next, nil);
         else {
             node *eval = funcall_r(c);
@@ -633,7 +728,7 @@ node *sttmnt_r(tkn *c){
     path->end->next = path->stt;
     return path;
 }
-// function definition hotpath rule
+// function definition codepath rule
 // the given token must be the opening parentheses of the args block 
 node *fun_def_r(tkn *c){
     node *path = alloc(sizeof(node));
@@ -694,7 +789,7 @@ node *fun_def_r(tkn *c){
 
                         // just the parameter
                         } else {
-                            tok_to_node(pntr, t);
+                            push_node(pntr, t);
 
                             // handle pointer definitions
                             if(isptr){
@@ -753,8 +848,8 @@ node *fun_def_r(tkn *c){
     path->stt->last = path->end;
     return path;
 }
-// function call hotpath rule
-// the given token must be the indexer
+// function call codepath rule
+// the given token may be the indexer
 node *funcall_r(tkn *c){
     node *path = alloc(sizeof(node));
     node *pntr = alloc(sizeof(node));
@@ -773,7 +868,7 @@ node *funcall_r(tkn *c){
 
     // assert keyword type
     if(pntr->type == KEYWORD){
-        if(!eq_kwd(c, funl))
+        if(!eq_kwd_range(c, funl))
             cmperr(NOTFLKW, c, nil);
 
     // assert function name type
@@ -826,12 +921,12 @@ node *funcall_r(tkn *c){
     path->stt->last = path->end;
     return path;
 }
-// goto jump label hotpath rule
+// goto jump label codepath rule
 node *labeldf_r(tkn *c, bool is_swedish){
     node  *path = nil;
     return path;
 }
-// goto jump hotpath rule
+// goto jump codepath rule
 node *jmp_stt_r(tkn *c){
     node  *path = nil;
     return path;
@@ -864,6 +959,7 @@ node *extrn_exp(tkn *c){
     bool swtch = F;
     tkn  *next = c->next;
     while(T){
+        if(eq_sym(next, SYM_CLN, 0)) break;
         // handle imported namespaces
         switch(block){
             // const [, other]
@@ -872,7 +968,7 @@ node *extrn_exp(tkn *c){
                 if(next->type == INDEXER){
                     if(!swtch){
                         if(chld){
-                            tok_to_node(chld, next);
+                            push_node(chld, next);
                         } else {
                             chld = alloc(sizeof(node));
                             i_ns->stt  = chld;
@@ -909,7 +1005,7 @@ node *extrn_exp(tkn *c){
                 if(next->type == LITERAL and next->apdx == STRING){
                     // TODO: check if file exists
                     block++;
-                    tok_to_node(pntr, next);
+                    push_node(pntr, next);
                     path->ltok = next;
                     next = next->next;
 
@@ -941,7 +1037,7 @@ node *extrn_exp(tkn *c){
                 // namespace
                 if(next->type == INDEXER){
                     if(!swtch){
-                        tok_to_node(chld, next);
+                        push_node(chld, next);
 
                         path->ltok = next;
                         next = next->next;
@@ -1006,7 +1102,7 @@ node *validthnd(tkn *c, bool is_nmsc, bool unwinding){
             pntr = pntr->next;
         // only a value indexing
         } else if(innr->type == INDEXER or innr->type == LITERAL){
-            tok_to_node(pntr, innr);
+            push_node(pntr, innr);
             pntr->ltok = innr;
 
         // unexpected token
@@ -1030,8 +1126,10 @@ node *validthnd(tkn *c, bool is_nmsc, bool unwinding){
         return validthnd(bgn->last, T, F);
 
     // structure literal assignment
-    } else if(eq_sym(c->next, SYM_BRA, 0)){
-        assert(F, "structure literals not implemented yet!");
+    } else if(c->type == INDEXER and eq_sym(c->next, SYM_BRA, 0)){
+        free(path);
+        free(pntr);
+        return struct_r(c);
 
     // function call or function declaration
     } else if(eq_sym(c->next, SYM_PAR, 0)){
@@ -1056,7 +1154,7 @@ node *validthnd(tkn *c, bool is_nmsc, bool unwinding){
         // fields must be indexers
         if(c->next->next->type == INDEXER){
             // push dot to later information
-            tok_to_node(pntr, c->next);
+            push_node(pntr, c->next);
 
             pntr->next = validthnd(c->next->next, T, T);
 
@@ -1100,12 +1198,12 @@ node *validthnd(tkn *c, bool is_nmsc, bool unwinding){
             free(path);
             return pntr;
         // true and function-like statements are valid right-hands
-        } else if(eq_kwd(c, funl)){
+        } else if(eq_kwd_range(c, funl)){
             free(path);
             free(pntr);
             return funcall_r(c);
 
-        } else if(eq_kwd(c, trus)){
+        } else if(eq_kwd_range(c, trus)){
             // TODO: implement true statements as expressions
             assert(F, "statements as values are not implemented yet");
         }
@@ -1118,7 +1216,7 @@ node *validthnd(tkn *c, bool is_nmsc, bool unwinding){
 // matches the closing or opening token index of a given symbol
 tkn *matchpair(tkn *c){
     u64 cnt = 0;
-    assert(c->type == LSYMBOL, "the given token is not paired");
+    assert(c->type == LSYMBOL, get_tokval(c));
 
     // it's a opening symbol
     if(c->apdx == 0){
@@ -1291,6 +1389,7 @@ node *parse(tkn *tkns, cmod mode){
     #define nxt(t)\
         t = t->next;\
         goto *lbls[t->type];
+        //printf("%s\n", get_tokval(t));
 
     tok = tkns;
     goto *lbls[tok->type];
@@ -1298,7 +1397,7 @@ node *parse(tkn *tkns, cmod mode){
     // statements and definitions
     case_KEYWORD:
         // local definition
-        if(eq_kwd(tok, ldef)){
+        if(eq_kwd_range(tok, ldef)){
             // avoid memory leaking
             if(ctxt->stt){
                 pntr->next = define_r(tok);
@@ -1314,7 +1413,7 @@ node *parse(tkn *tkns, cmod mode){
             tok = pntr->ltok;
 
         // statements
-        } else if(eq_kwd(tok, sttt)){
+        } else if(eq_kwd_range(tok, sttt)){
             // avoid memory leaking
             if(ctxt->stt){
                 pntr->next = sttmnt_r(tok);
@@ -1323,6 +1422,22 @@ node *parse(tkn *tkns, cmod mode){
             } else {
                 ctxt->stt = sttmnt_r(tok);
                 pntr = ctxt->stt;
+            }
+
+            // evaluate if tails
+            while((eq_kwd(pntr->ltok->next, KW_IF) or
+            eq_kwd(pntr->ltok->next, KW_ELIF))
+            and eq_kwd_range(pntr->ltok->next, iftl)){
+
+                pntr->next = sttmnt_r(pntr->ltok->next);
+                pntr->next->last = pntr;
+                pntr = pntr->next;
+
+                printf("%s %d %d\n", 
+                    get_tokval(pntr->ltok->next),
+                    pntr->ltok->next->line,
+                    pntr->ltok->next->coln
+                );
             }
 
             // there is an end of line?

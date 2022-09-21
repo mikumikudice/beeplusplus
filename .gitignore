@@ -1,5 +1,6 @@
-.[^(gitattributes)]*
-TODO
+.*
+TODO.md
 bi
-bi.exe
+test
 run_valgrind.sh
+*.o

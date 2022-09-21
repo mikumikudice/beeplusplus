@@ -14,7 +14,7 @@
 
 // list of the reserved keywords
 imut char KEYWORDS[][8] = {
-    "if"    , "elif"  , "for"   , "switch",
+    "for"   , "switch", "if"    , "elif",
     "else"  ,
     "goto"  , "extrn" , "return",
     "next"  , "break" ,
@@ -24,7 +24,7 @@ imut char KEYWORDS[][8] = {
     "dist"  , "from"  ,  "in"   , "as",
 };
 enum {
-    KW_IF  , KW_ELIF, KW_FOR, KW_SWITCH,  // true statements
+    KW_FOR , KW_SWITCH, KW_IF, KW_ELIF,   // true statements
     KW_ELSE,                              // body holder
 
     KW_GOTO, KW_EXTRN, KW_RETURN,         // expression holders
@@ -38,14 +38,15 @@ enum {
     
 };
 
-u16 sttt[2] = {00,  9}; // statement keywords
-u16 trus[2] = {00,  3}; // true statements
-u16 body[2] = {04,  4}; // body holder statements
-u16 hldr[2] = {05,  7}; // expression holder statements
+u16 sttt[2] = { 0,  9}; // statement keywords
+u16 trus[2] = { 0,  3}; // true statements
+u16 body[2] = { 4,  4}; // body holder statements
+u16 hldr[2] = { 5,  7}; // expression holder statements
 u16 sngl[2] = { 8,  9}; // single statements
 u16 funl[2] = {10, 12}; // function-like statements
 u16 othr[2] = {13, 14}; // other statements
 u16 ldef[2] = {15, 17}; // local var's definition keywords
+u16 iftl[2] = { 3,  4}; // if tail
 
 // list of operators
 imut char OPERATORS[][4] = {
